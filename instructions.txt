@@ -1,0 +1,223 @@
+# List of (usable) ascii safe instructions
+# removed are:
+#   - all instructions reading/writing absolute addresses
+#   - all instructions using %sp
+#   - all instructions using %ch because %cx is unavailable
+#   - all instructions using %dh because %dx is unavailable
+
+30 38			xor	%bh,(%bx,%si)
+30 39			xor	%bh,(%bx,%di)
+
+30 61 OFS		xor	%ah,OFS(%bx,%di)
+30 62 OFS		xor	%ah,OFS(%bp,%si)
+30 63 OFS		xor	%ah,OFS(%bp,%di)
+30 64 OFS		xor	%ah,OFS(%si)
+30 65 OFS		xor	%ah,OFS(%di)
+30 66 OFS		xor	%ah,OFS(%bp)
+30 67 OFS		xor	%ah,OFS(%bx)
+30 78 OFS		xor	%bh,OFS(%bx,%si)
+30 79 OFS		xor	%bh,OFS(%bx,%di)
+30 7a OFS		xor	%bh,OFS(%bp,%si)
+
+31 30			xor	%si,(%bx,%si)
+31 31			xor	%si,(%bx,%di)
+31 32			xor	%si,(%bp,%si)
+31 33			xor	%si,(%bp,%di)
+31 34			xor	%si,(%si)
+31 35			xor	%si,(%di)
+31 37			xor	%si,(%bx)
+31 38			xor	%di,(%bx,%si)
+31 39			xor	%di,(%bx,%di)
+
+31 68 OFS		xor	%bp,OFS(%bx,%si)
+31 69 OFS		xor	%bp,OFS(%bx,%di)
+31 6a OFS		xor	%bp,OFS(%bp,%si)
+31 6b OFS		xor	%bp,OFS(%bp,%di)
+31 6c OFS		xor	%bp,OFS(%si)
+31 6d OFS		xor	%bp,OFS(%di)
+31 6e OFS		xor	%bp,OFS(%bp)
+31 6f OFS		xor	%bp,OFS(%bx)
+31 70 OFS		xor	%si,OFS(%bx,%si)
+31 71 OFS		xor	%si,OFS(%bx,%di)
+31 72 OFS		xor	%si,OFS(%bp,%si)
+31 73 OFS		xor	%si,OFS(%bp,%di)
+31 74 OFS		xor	%si,OFS(%si)
+31 75 OFS		xor	%si,OFS(%di)
+31 76 OFS		xor	%si,OFS(%bp)
+31 77 OFS		xor	%si,OFS(%bx)
+31 78 OFS		xor	%di,OFS(%bx,%si)
+31 79 OFS		xor	%di,OFS(%bx,%di)
+31 7a OFS		xor	%di,OFS(%bp,%si)
+
+32 38			xor	(%bx,%si),%bh
+32 39			xor	(%bx,%di),%bh
+
+32 61 OFS		xor	OFS(%bx,%di),%ah
+32 62 OFS		xor	OFS(%bp,%si),%ah
+32 63 OFS		xor	OFS(%bp,%di),%ah
+32 64 OFS		xor	OFS(%si),%ah
+32 65 OFS		xor	OFS(%di),%ah
+32 66 OFS		xor	OFS(%bp),%ah
+32 67 OFS		xor	OFS(%bx),%ah
+32 78 OFS		xor	OFS(%bx,%si),%bh
+32 79 OFS		xor	OFS(%bx,%di),%bh
+32 7a OFS		xor	OFS(%bp,%si),%bh
+
+33 30			xor	(%bx,%si),%si
+33 31			xor	(%bx,%di),%si
+33 32			xor	(%bp,%si),%si
+33 33			xor	(%bp,%di),%si
+33 34			xor	(%si),%si
+33 35			xor	(%di),%si
+33 37			xor	(%bx),%si
+33 38			xor	(%bx,%si),%di
+33 39			xor	(%bx,%di),%di
+
+33 68 OFS		xor	OFS(%bx,%si),%bp
+33 69 OFS		xor	OFS(%bx,%di),%bp
+33 6a OFS		xor	OFS(%bp,%si),%bp
+33 6b OFS		xor	OFS(%bp,%di),%bp
+33 6c OFS		xor	OFS(%si),%bp
+33 6d OFS		xor	OFS(%di),%bp
+33 6e OFS		xor	OFS(%bp),%bp
+33 6f OFS		xor	OFS(%bx),%bp
+33 70 OFS		xor	OFS(%bx,%si),%si
+33 71 OFS		xor	OFS(%bx,%di),%si
+33 72 OFS		xor	OFS(%bp,%si),%si
+33 73 OFS		xor	OFS(%bp,%di),%si
+33 74 OFS		xor	OFS(%si),%si
+33 75 OFS		xor	OFS(%di),%si
+33 76 OFS		xor	OFS(%bp),%si
+33 77 OFS		xor	OFS(%bx),%si
+33 78 OFS		xor	OFS(%bx,%si),%di
+33 79 OFS		xor	OFS(%bx,%di),%di
+33 7a OFS		xor	OFS(%bp,%si),%di
+
+34 IMM			xor	$IMM,%al
+35 IMMH IMML		xor	$IMM,%ax
+
+37			aaa
+
+38 38			cmp	%bh,(%bx,%si)
+38 39			cmp	%bh,(%bx,%di)
+
+38 61 OFS		cmp	%ah,OFS(%bx,%di)
+38 62 OFS		cmp	%ah,OFS(%bp,%si)
+38 63 OFS		cmp	%ah,OFS(%bp,%di)
+38 64 OFS		cmp	%ah,OFS(%si)
+38 65 OFS		cmp	%ah,OFS(%di)
+38 66 OFS		cmp	%ah,OFS(%bp)
+38 67 OFS		cmp	%ah,OFS(%bx)
+38 78 OFS		cmp	%bh,OFS(%bx,%si)
+38 79 OFS		cmp	%bh,OFS(%bx,%di)
+38 7a OFS		cmp	%bh,OFS(%bp,%si)
+
+39 30			cmp	%si,(%bx,%si)
+39 31			cmp	%si,(%bx,%di)
+39 32			cmp	%si,(%bp,%si)
+39 33			cmp	%si,(%bp,%di)
+39 34			cmp	%si,(%si)
+39 35			cmp	%si,(%di)
+39 37			cmp	%si,(%bx)
+39 38			cmp	%di,(%bx,%si)
+39 39			cmp	%di,(%bx,%di)
+
+39 68 OFS		cmp	%bp,OFS(%bx,%si)
+39 69 OFS		cmp	%bp,OFS(%bx,%di)
+39 6a OFS		cmp	%bp,OFS(%bp,%si)
+39 6b OFS		cmp	%bp,OFS(%bp,%di)
+39 6c OFS		cmp	%bp,OFS(%si)
+39 6d OFS		cmp	%bp,OFS(%di)
+39 6e OFS		cmp	%bp,OFS(%bp)
+39 6f OFS		cmp	%bp,OFS(%bx)
+39 70 OFS		cmp	%si,OFS(%bx,%si)
+39 71 OFS		cmp	%si,OFS(%bx,%di)
+39 72 OFS		cmp	%si,OFS(%bp,%si)
+39 73 OFS		cmp	%si,OFS(%bp,%di)
+39 74 OFS		cmp	%si,OFS(%si)
+39 75 OFS		cmp	%si,OFS(%di)
+39 76 OFS		cmp	%si,OFS(%bp)
+39 77 OFS		cmp	%si,OFS(%bx)
+39 78 OFS		cmp	%di,OFS(%bx,%si)
+39 79 OFS		cmp	%di,OFS(%bx,%di)
+39 7a OFS		cmp	%di,OFS(%bp,%si)
+
+61			popa
+66 61			popal
+66 6a IMM		pushl	$IMM
+68 IMMH IMML		push	$IMM
+
+69 30 IMMH IMML		imul	$IMM,(%bx,%si),%si
+69 31 IMMH IMML		imul	$IMM,(%bx,%di),%si
+69 32 IMMH IMML		imul	$IMM,(%bp,%si),%si
+69 33 IMMH IMML		imul	$IMM,(%bp,%di),%si
+69 34 IMMH IMML		imul	$IMM,(%si),%si
+69 35 IMMH IMML		imul	$IMM,(%di),%si
+69 37 IMMH IMML		imul	$IMM,(%bx),%si
+69 38 IMMH IMML		imul	$IMM,(%bx,%si),%di
+69 39 IMMH IMML		imul	$IMM,(%bx,%di),%di
+
+69 68 OFS IMMH IMML	imul	$IMM,OFS(%bx,%si),%bp
+69 69 OFS IMMH IMML	imul	$IMM,OFS(%bx,%di),%bp
+69 6a OFS IMMH IMML	imul	$IMM,OFS(%bp,%si),%bp
+69 6b OFS IMMH IMML	imul	$IMM,OFS(%bp,%di),%bp
+69 6c OFS IMMH IMML	imul	$IMM,OFS(%si),%bp
+69 6d OFS IMMH IMML	imul	$IMM,OFS(%di),%bp
+69 6e OFS IMMH IMML	imul	$IMM,OFS(%bp),%bp
+69 6f OFS IMMH IMML	imul	$IMM,OFS(%bx),%bp
+69 70 OFS IMMH IMML	imul	$IMM,OFS(%bx,%si),%si
+69 71 OFS IMMH IMML	imul	$IMM,OFS(%bx,%di),%si
+69 72 OFS IMMH IMML     imul	$IMM,OFS(%bp,%si),%si
+69 73 OFS IMMH IMML	imul	$IMM,OFS(%bp,%di),%si
+69 74 OFS IMMH IMML	imul	$IMM,OFS(%si),%si
+69 75 OFS IMMH IMML	imul	$IMM,OFS(%di),%si
+69 76 OFS IMMH IMML	imul	$IMM,OFS(%bp),%si
+69 77 OFS IMMH IMML	imul	$IMM,OFS(%bx),%si
+69 78 OFS IMMH IMML	imul	$IMM,OFS(%bx,%si),%di
+69 79 OFS IMMH IMML	imul	$IMM,OFS(%bx,%di),%di
+69 7a OFS IMMH IMML	imul	$IMM,OFS(%bp,%si),%di
+
+6a IMM			push	$IMM
+
+6b 30 IMM		imul	$IMM,(%bx,%si),%si
+6b 31 IMM		imul	$IMM,(%bx,%di),%si
+6b 32 IMM		imul	$IMM,(%bp,%si),%si
+6b 33 IMM		imul	$IMM,(%bp,%di),%si
+6b 34 IMM		imul	$IMM,(%si),%si
+6b 35 IMM		imul	$IMM,(%di),%si
+6b 37 IMM		imul	$IMM,(%bx),%si
+6b 38 IMM		imul	$IMM,(%bx,%si),%di
+6b 39 IMM		imul	$IMM,(%bx,%di),%di
+
+6b 68 OFS IMM		imul	$IMM,OFS(%bx,%si),%bp
+6b 69 OFS IMM		imul	$IMM,OFS(%bx,%di),%bp
+6b 6a OFS IMM		imul	$IMM,OFS(%bp,%si),%bp
+6b 6b OFS IMM		imul	$IMM,OFS(%bp,%di),%bp
+6b 6c OFS IMM		imul	$IMM,OFS(%si),%bp
+6b 6d OFS IMM		imul	$IMM,OFS(%di),%bp
+6b 6e OFS IMM		imul	$IMM,OFS(%bp),%bp
+6b 6f OFS IMM		imul	$IMM,OFS(%bx),%bp
+6b 70 OFS IMM		imul	$IMM,OFS(%bx,%si),%si
+6b 71 OFS IMM		imul	$IMM,OFS(%bx,%di),%si
+6b 72 OFS IMM		imul	$IMM,OFS(%bp,%si),%si
+6b 73 OFS IMM		imul	$IMM,OFS(%bp,%di),%si
+6b 74 OFS IMM		imul	$IMM,OFS(%si),%si
+6b 75 OFS IMM		imul	$IMM,OFS(%di),%si
+6b 76 OFS IMM		imul	$IMM,OFS(%bp),%si
+6b 77 OFS IMM		imul	$IMM,OFS(%bx),%si
+6b 78 OFS IMM		imul	$IMM,OFS(%bx,%si),%di
+6b 79 OFS IMM		imul	$IMM,OFS(%bx,%di),%di
+6b 7a OFS IMM		imul	$IMM,OFS(%bp,%si),%di
+
+70 OFS			jo	OFS
+71 OFS			jno	OFS
+72 OFS			jb	OFS
+73 OFS			jae	OFS
+74 OFS			je	OFS
+75 OFS			jne	OFS
+76 OFS			jbe	OFS
+77 OFS			ja	OFS
+78 OFS			js	OFS
+78 OFS			js	OFS
+79 OFS			jns	OFS
+7a OFS			jp	OFS
