@@ -17,10 +17,8 @@ smile.com : stage1.com stage2.asc stage3.asc
 	cat stage1.com stage2.asc stage3.asc >smile.com
 	chmod +x smile.com
 
-unpatched.com : stage12.S smile.lds
-	gcc -o unpatched.o -m32 -fno-asynchronous-unwind-tables -march=i386 -mtune=i386 -g0 -c -DUNPATCHED $<
-	ld -o $@ unpatched.o -T smile.lds -Ttext ${stage1Base}
-	objdump -D $@ -b binary -m i386 -M addr16,data16 --adjust-vma=${stage1Base} >unpatched.lst
+stage12.inc : genStage12.js
+	node genStage12.js > $@
 
 stage12.com : stage12.S smile.lds stage12.inc
 	gcc -m32 -fno-asynchronous-unwind-tables -march=i386 -mtune=i386 -g0 -c $<

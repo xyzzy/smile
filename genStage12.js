@@ -1,16 +1,70 @@
+/*
+ *  This file is part of smile: ASCII safe binaries
+ *  Copyright (C) 2011, 2021, xyzzy@rockingship.org
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published
+ *  by the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/*
+ * This program searches for valid combinations of immediate and offsets.
+ * It does this by trying all possible values and dropping those that do not pass validation.
+ *
+ * The `imul` instruction can be either a byte or a word.
+ * The addresses used here are assuming they are all bytes and otherwise compensated internally.
+ * Addresses listed in `stage12.lst` can differ from runtime.
+ * Run `make unpatched.com` to create the listing to extract their values and paste below.
+ *
+ * Stage2 needs to be able to access the heads of output and input which are located directly after stage2.
+ */
+
+/*
+ * Changelog:
+ *
+ * @date 2021-02-06 17:54:59
+ *
+ * With the first instruction being a `imul` to load %di, it uses %si as index register which points to the start of stage1.
+ * The lowest register offset is 0x30.
+ * This implies that the hash needs to be located at %0x0130 for initial %si=0x0100.
+ * Stage1+stage2 combined is smaller than 0x30 bytes requiring padding.
+ * Padding can be easily achieved by using word multipliers instead of byte multipliers.
+ * The location of the output HEAD is located directly after stage2, which is also a hash.
+ * Sharing the same hash location for stage1+3 implies that stage1 determines the initial hash value (used to be genStage3)
+ */
+
+
 "use strict";
 
 /*
  * Fixup locations and values taken from `unpatched.lst`
  */
 
-let ADDR1 = 0x0128;
+// SEED/multiplier for stage3
+// NOTE: This is the authoritative declaration
+let SEED = 0x6161;
+
+let ADDR1 = 0x0124;
 let WORD1 = 0x4304;
-let ADDR2 = 0x012d;
+let ADDR2 = 0x0129;
 let WORD2 = 0x4b47;
-let ADDR3 = 0x0132;
+let ADDR3 = 0x012e;
 let WORD3 = 0xe575;
-let SIZE = 0x0134 + 1; // +1 to access first byte state3 data
+
+let stage2Start = 0x011b;			// start location of stage2
+let stage2Size = 0x0130 - 0x011b;		// length of stage2
+
+let addrHEAD = stage2Start + stage2Size;	// directly after stage2 is the output head containing the number generator hash
+let addrDATA = addrHEAD + 2;			// directly after HEAD in the first data byte
 
 /*
  * Initial values for msdos/freedos
@@ -21,9 +75,17 @@ let initialHash = 0x20cd;	// %bx=0x0000, (%bx)=0x20cd
 let initialSI = 0x0100;		// %si=0x0100
 let initialDI = 0xfffe;		// %di=0xfffe
 
-let rangeAddr = ADDR1;		// address of modifiable range
-let rangeLen = SIZE - ADDR1;	// length of modifiable range
+function toHex(n, width) {
+	let s = "0000" + n.toString(16);
+	if (n >= 0x100 || width === 2)
+		return "0x" + s.substr(-4, 4);
+	else
+		return "0x" + s.substr(-2, 2);
+}
 
+function toChar(n) {
+	return '\'' + String.fromCharCode(n) + '\'';
+}
 
 /*
  * safe ascii characters in order of desirability
@@ -49,16 +111,96 @@ for (let i = 0; i < 65536; i++)
 		isSafe16[i] = isSafe8[i >> 8] + isSafe8[i & 0xff];
 
 /*
- * step-1: Step-2 does not generate enough diversity for %di, generate an additional number
+ * step-1: Create %di from hash located at end of stage-2
+ *	   NOTE: the initial hash must be even
  *
- *	imul	$IMM1,(%bx),%si		// next number
- *	xor	%si,(%bx)		// update hash
+ *	imul	$IMM1,OFSHASH(%bp,%di),%di	// load %di
  */
 
 // indexed by latest generated number
 let step1Data = new Array(65536);
 
 let cnt = 0;
+for (let imm = 0; imm < 256; imm++) {
+	if (isSafe8[imm]) {
+		for (let hash = 0; hash < 65536; hash++) {
+			if (isSafe16[hash] && (hash & 1) === 0) {
+
+				// next number
+				let di = (hash * imm) & 0xffff;
+
+				// directly after stage2 is the output head containing the number generator hash
+				let ofsHEAD = stage2Start + stage2Size;
+				// directly after HEAD in the first data byte
+				let ofsDATA = ofsHEAD + 2;
+
+				// locations should be accessible
+				if (!isSafe8[ADDR1 - di] || !isSafe8[ADDR2 - di] || !isSafe8[ADDR3 - di] || !isSafe8[ofsDATA - di])
+					continue;
+
+				let score = isSafe8[imm];
+
+				// valid combo
+				if (!step1Data[di] || score < step1Data[di].score) {
+					step1Data[di] = {
+						score: score,	// desirability
+						IMM1: imm,	// multiplier
+						di: di,		// next number
+						hash: hash,	// number hash
+					};
+					cnt++;
+				}
+			}
+		}
+	}
+}
+
+for (let imm = 0; imm < 65536; imm++) {
+	if (isSafe16[imm]) {
+		for (let hash = 0; hash < 65536; hash++) {
+			if (isSafe16[hash] && (hash & 1) === 0) {
+
+				// next number
+				let di = (hash * imm) & 0xffff;
+
+				// locations should be accessible
+				if (!isSafe8[ADDR1 - di] || !isSafe8[ADDR2 - di] || !isSafe8[ADDR3 - di] || !isSafe8[addrDATA - di])
+					continue;
+
+				let score = isSafe16[imm] + 256; // add word penalty
+
+				// valid combo
+				if (!step1Data[di] || score < step1Data[di].score) {
+					step1Data[di] = {
+						score: score,	// desirability
+						IMM1: imm,	// multiplier
+						hash: hash,	// initial hash
+						di: di,		// resulting %di
+					};
+					cnt++;
+				}
+			}
+		}
+	}
+}
+
+if (!cnt) {
+	console.error("step-1 failed");
+	process.exit(1);
+}
+console.error("Step-1 has " + cnt + " candidates");
+
+/*
+ * step-2: Add entropy to the number generator
+ *
+ *	imul	$IMM2,(%bx),%si		// next number
+ *	xor	%si,(%bx)		// update hash
+ */
+
+// indexed by latest generated number
+let step2Data = new Array(65536);
+
+cnt = 0;
 for (let imm = 0; imm < 256; imm++) {
 	if (isSafe8[imm]) {
 		// next number
@@ -68,10 +210,10 @@ for (let imm = 0; imm < 256; imm++) {
 		let score = isSafe8[imm];
 
 		// valid combo
-		if (!step1Data[hash] || score < step1Data[hash].score) {
-			step1Data[hash] = {
+		if (!step2Data[hash] || score < step2Data[hash].score) {
+			step2Data[hash] = {
 				score: score,	// desirability
-				IMM1: imm,	// multiplier
+				IMM2: imm,	// multiplier
 				si: si,		// next number
 				hash: hash,	// number hash
 			};
@@ -85,99 +227,17 @@ for (let imm = 0; imm < 65536; imm++) {
 		let si = (initialHash * imm) & 0xffff;
 		let hash = si ^ initialHash;
 
-		let score = isSafe16[imm] + 10; // penalty for word
+		let score = isSafe16[imm] + 256; // add word penalty
 
 		// valid combo
-		if (!step1Data[hash] || score < step1Data[hash].score) {
-			step1Data[hash] = {
+		if (!step2Data[hash] || score < step2Data[hash].score) {
+			step2Data[hash] = {
 				score: score,	// desirability
-				IMM1: imm,	// multiplier
+				IMM2: imm,	// multiplier
 				si: si,		// next number
 				hash: hash,	// number hash
 			};
 			cnt++;
-		}
-	}
-}
-
-if (!cnt) {
-	console.error("step-1 failed");
-	process.exit(1);
-}
-console.error("Step-1 has " + cnt + " candidates");
-
-/*
- * STEP-2: Generate number and initialize %di so that it points to the anchor
- *	   Use initial value of %di, does not work when run from debug.exe
- *
- *	imul	$IMM2,(%bx),%si		// next number
- *	xor	OFSDI(%bx,%si),%di	// load %di
- */
-
-// indexed by latest generated number
-let step2Data = new Array(65536);
-
-cnt = 0;
-for (let iStep1 = 0; iStep1 < 65536; iStep1++) {
-	let step1 = step1Data[iStep1];
-	if (step1) {
-		for (let imm = 0; imm < 256; imm++) {
-			if (isSafe8[imm]) {
-				// next number
-				let hash = ((step1.hash * imm) & 0xffff) ^ step1.hash;
-				// what would %di be
-				let di = initialDI ^ hash;
-				let ofs = (rangeAddr - di) & 0xffff;
-
-				// does %di span anchor range.
-				// NOTE: this is a temporary test, add extra expansion space
-				if (ofs >= 0x61 - 6 && ofs + rangeLen <= 0x7a - 6) {
-
-					let score = step1.score + isSafe8[imm];
-
-					// valid combo
-					if (!step2Data[hash] || score < step2Data[hash].score) {
-						step2Data[hash] = {
-							score: score,		// desirability
-							hash: step1.hash,	// NOTE: hash is not updates
-							IMM2: imm,		// multiplier
-							di: di,			// estimated value of %di
-							OFSDI: ofs,
-							step1: step1,
-						};
-						cnt++;
-					}
-				}
-			}
-		}
-		for (let imm = 0; imm < 65536; imm++) {
-			if (isSafe16[imm]) {
-				// next number
-				let hash = ((step1.hash * imm) & 0xffff) ^ step1.hash;
-				// what would %di be
-				let di = initialDI ^ hash;
-				let ofs = (rangeAddr - di) & 0xffff;
-
-				// does %di span anchor range.
-				// NOTE: this is a temporary test, add extra expansion space
-				if (ofs >= 0x61 - 6 && ofs + rangeLen <= 0x7a - 6) {
-
-					let score = step1.score + isSafe16[imm] + 10; // penalty for word
-
-					// valid combo
-					if (!step2Data[hash] || score < step2Data[hash].score) {
-						step2Data[hash] = {
-							score: score,		// desirability
-							hash: step1.hash,	// NOTE: hash is not updates
-							IMM2: imm,		// multiplier
-							di: di,			// value of %di
-							OFSDI: ofs,
-							step1: step1,
-						};
-						cnt++;
-					}
-				}
-			}
 		}
 	}
 }
@@ -189,10 +249,11 @@ if (!cnt) {
 console.error("Step-2 has " + cnt + " candidates");
 
 /*
- * step-3: Step-4 does not generate enough diversity for patches, generate an additional number
+ * step-3: Generate number and patch stage2
  *
- *	imul	$IMM3,(%bx),%si		// next number
- *	xor	%si,(%bx)		// update hash
+ *  	imul	$IMM3,(%bx),%si	// next number
+ * 	xor	%si,OFSMEM1(%di)
+ * 	xor	%si,OFSMEM2(%di)
  */
 
 // indexed by latest generated number
@@ -202,43 +263,61 @@ cnt = 0;
 for (let iStep2 = 0; iStep2 < 65536; iStep2++) {
 	let step2 = step2Data[iStep2];
 	if (step2) {
+		let mem1H = WORD1 >> 8;
+		let mem1L = WORD1 & 0xff;
+		let mem2H = WORD2 >> 8;
+		let mem2L = WORD2 & 0xff;
+
+		// next number
 		for (let imm = 0; imm < 256; imm++) {
 			if (isSafe8[imm]) {
-				// next number
+
 				let si = (step2.hash * imm) & 0xffff;
-				let hash = si ^ step2.hash;
+				let siH = si >> 8;
+				let siL = si & 0xff;
 
-				let score = step2.score + isSafe8[imm];
+				// test if combo is safe
+				if (isSafe8[mem1L ^ siL] && isSafe8[mem1H ^ siH] && isSafe8[mem2L ^ siL] && isSafe8[mem2H ^ siH]) {
 
-				if (!step3Data[hash] || score < step3Data[hash].score) {
-					step3Data[hash] = {
-						score: score,		// desirability
-						IMM3: imm,		// multiplier
-						si: si,			// next number
-						hash: hash,		// updated hash
-						step2: step2,		// link to previous number
-					};
-					cnt++;
+					let score = step2.score + isSafe8[imm];
+
+					// valid combo
+					if (!step3Data[si] || score < step3Data[si].score) {
+						step3Data[si] = {
+							score: score,		// desirability
+							IMM3: imm,		// multiplier
+							si: si,			// next number
+							step2: step2,		// link to previous number
+						};
+						cnt++;
+					}
 				}
 			}
 		}
+
+		// next number
 		for (let imm = 0; imm < 65536; imm++) {
 			if (isSafe16[imm]) {
-				// next number
+
 				let si = (step2.hash * imm) & 0xffff;
-				let hash = si ^ step2.hash;
+				let siH = si >> 8;
+				let siL = si & 0xff;
 
-				let score = step2.score + isSafe16[imm] + 10; // penalty for word
+				// test if combo is safe
+				if (isSafe8[mem1L ^ siL] && isSafe8[mem1H ^ siH] && isSafe8[mem2L ^ siL] && isSafe8[mem2H ^ siH]) {
 
-				if (!step3Data[hash] || score < step3Data[hash].score) {
-					step3Data[hash] = {
-						score: score,		// desirability
-						IMM3: imm,		// multiplier
-						si: si,			// next number
-						hash: hash,		// updated hash
-						step2: step2,		// link to previous number
-					};
-					cnt++;
+					let score = step2.score + isSafe16[imm] + 256; // add word penalty
+
+					// valid combo
+					if (!step3Data[si] || score < step3Data[si].score) {
+						step3Data[si] = {
+							score: score,		// desirability
+							IMM3: imm,		// multiplier
+							si: si,			// next number
+							step2: step2,		// link to previous number
+						};
+						cnt++;
+					}
 				}
 			}
 		}
@@ -251,11 +330,10 @@ if (!cnt) {
 console.error("Step-3 has " + cnt + " candidates");
 
 /*
- * STEP-4: Generate number and patch stage2
+ *  step-4: Generate number and patch stage2
  *
  *  	imul	$IMM4,(%bx),%si	// next number
- * 	xor	%si,OFSMEM1(%di)
- * 	xor	%si,OFSMEM2(%di)
+ * 	xor	%si,OFSMEM3(%di)
  */
 
 // indexed by latest generated number
@@ -265,37 +343,29 @@ cnt = 0;
 for (let iStep3 = 0; iStep3 < 65536; iStep3++) {
 	let step3 = step3Data[iStep3];
 	if (step3) {
-		let mem1H = WORD1 >> 8;
-		let mem1L = WORD1 & 0xff;
-		let mem2H = WORD2 >> 8;
-		let mem2L = WORD2 & 0xff;
+		let step2 = step3.step2;
+		let mem3H = WORD3 >> 8;
+		let mem3L = WORD3 & 0xff;
 
 		// next number
 		for (let imm = 0; imm < 256; imm++) {
 			if (isSafe8[imm]) {
 
-				let si = (step3.hash * imm) & 0xffff;
+				let si = (step2.hash * imm) & 0xffff;
 				let siH = si >> 8;
 				let siL = si & 0xff;
-				let hash = step3.hash; // NOTE: hash is not updated
 
 				// test if combo is safe
-				if (isSafe8[mem1L ^ siL] && isSafe8[mem1H ^ siH] &&
-					isSafe8[mem2L ^ siL] && isSafe8[mem2H ^ siH]) {
+				if (isSafe8[mem3L ^ siL] && isSafe8[mem3H ^ siH]) {
 
 					let score = step3.score + isSafe8[imm];
 
 					// valid combo
-					if (!step4Data[hash] || score < step4Data[hash].score) {
-						step4Data[hash] = {
+					if (!step4Data[si] || score < step4Data[si].score) {
+						step4Data[si] = {
 							score: score,		// desirability
 							IMM4: imm,		// multiplier
 							si: si,			// next number
-							hash: hash,		// hash
-							FIX1H: mem1H ^ siH,
-							FIX1L: mem1L ^ siL,
-							FIX2H: mem2H ^ siH,
-							FIX2L: mem2L ^ siL,
 							step3: step3,		// link to previous number
 						};
 						cnt++;
@@ -308,28 +378,21 @@ for (let iStep3 = 0; iStep3 < 65536; iStep3++) {
 		for (let imm = 0; imm < 65536; imm++) {
 			if (isSafe16[imm]) {
 
-				let si = (step3.hash * imm) & 0xffff;
+				let si = (step2.hash * imm) & 0xffff;
 				let siH = si >> 8;
 				let siL = si & 0xff;
-				let hash = step3.hash; // NOTE: hash is not updated
 
 				// test if combo is safe
-				if (isSafe8[mem1L ^ siL] && isSafe8[mem1H ^ siH] &&
-					isSafe8[mem2L ^ siL] && isSafe8[mem2H ^ siH]) {
+				if (isSafe8[mem3L ^ siL] && isSafe8[mem3H ^ siH]) {
 
-					let score = step3.score + isSafe16[imm] + 10; // penalty for word;
+					let score = step3.score + isSafe16[imm] + 256; // add word penalty
 
 					// valid combo
-					if (!step4Data[hash] || score < step4Data[hash].score) {
-						step4Data[hash] = {
+					if (!step4Data[si] || score < step4Data[si].score) {
+						step4Data[si] = {
 							score: score,		// desirability
 							IMM4: imm,		// multiplier
 							si: si,			// next number
-							hash: hash,		// hash
-							FIX1H: mem1H ^ siH,
-							FIX1L: mem1L ^ siL,
-							FIX2H: mem2H ^ siH,
-							FIX2L: mem2L ^ siL,
 							step3: step3,		// link to previous number
 						};
 						cnt++;
@@ -346,164 +409,86 @@ if (!cnt) {
 console.error("Step-4 has " + cnt + " candidates");
 
 /*
- * STEP-5: Generate number and patch stage2
- *
- *  	imul	$IMM5,(%bx),%si	// next number
- * 	xor	%si,OFSMEM3(%di)
- */
-
-// indexed by latest generated number
-let step5Data = new Array(65536);
-
-cnt = 0;
-for (let iStep4 = 0; iStep4 < 65536; iStep4++) {
-	let step4 = step4Data[iStep4];
-	if (step4) {
-		let mem3H = WORD3 >> 8;
-		let mem3L = WORD3 & 0xff;
-
-		// next number
-		for (let imm = 0; imm < 256; imm++) {
-			if (isSafe8[imm]) {
-
-				let si = (step4.hash * imm) & 0xffff;
-				let siH = si >> 8;
-				let siL = si & 0xff;
-				let hash = step4.hash; // NOTE: hash is not updated
-
-				// test if combo is safe
-				if (isSafe8[mem3L ^ siL] && isSafe8[mem3H ^ siH]) {
-
-					let score = step4.score + isSafe8[imm];
-
-					// valid combo
-					if (!step5Data[hash] || score < step5Data[hash].score) {
-						step5Data[hash] = {
-							score: score,		// desirability
-							IMM5: imm,		// multiplier
-							si: si,			// next number
-							hash: hash,		// hash
-							FIX3H: mem3H ^ siH,
-							FIX3L: mem3L ^ siL,
-							step4: step4,		// link to previous number
-						};
-						cnt++;
-					}
-				}
-			}
-		}
-
-		// next number
-		for (let imm = 0; imm < 65536; imm++) {
-			if (isSafe16[imm]) {
-
-				let si = (step4.hash * imm) & 0xffff;
-				let siH = si >> 8;
-				let siL = si & 0xff;
-				let hash = step4.hash; // NOTE: hash is not updated
-
-				// test if combo is safe
-				if (isSafe8[mem3L ^ siL] && isSafe8[mem3H ^ siH]) {
-
-					let score = step4.score + isSafe16[imm] + 10; // penalty for word;
-
-					// valid combo
-					if (!step5Data[hash] || score < step5Data[hash].score) {
-						step5Data[hash] = {
-							score: score,		// desirability
-							IMM5: imm,		// multiplier
-							si: si,			// next number
-							hash: hash,		// hash
-							FIX3H: mem3H ^ siH,
-							FIX3L: mem3L ^ siL,
-							step4: step4,		// link to previous number
-						};
-						cnt++;
-					}
-				}
-			}
-		}
-	}
-}
-if (!cnt) {
-	console.error("step-5 failed");
-	process.exit(1);
-}
-console.error("Step-5 has " + cnt + " candidates");
-
-/*
- * Locate best candidate
+ * Cross product for combinations having exactly 1 WORD intermediate
+ * With a given initial %di of 0xfffe and an offset of '0' (0x30), that would place the Head hash at 0x12e
  */
 
 let best = null;
-for (let iStep5 = 0; iStep5 < 65536; iStep5++) {
-	let step5 = step5Data[iStep5];
-	if (step5) {
-		let di = step5.step4.step3.step2.di;
+cnt = 0;
+for (let iStep1 = 0; iStep1 < 65536; iStep1++) {
+	let step1 = step1Data[iStep1];
+	if (step1) {
 
-		// how many multipliers with value >= 256
-		let extra = step5.score % 10;
-		// %di should be compensate for the extra bytes
-		di -= extra;
+		for (let iStep4 = 0; iStep4 < 65536; iStep4++) {
+			let step4 = step4Data[iStep4];
+			if (step4) {
 
-		// revalidate
-		let ofs = (rangeAddr - di) & 0xffff;
-		if (ofs >= 0x61 && ofs + rangeLen <= 0x7a) {
+				// select only triple word combos
+				let score = step1.score + step4.score;
+				let numWords = score >> 8;  // high byte contains number or words
 
-			// valid candidate, select on score
-			if (!best || step5.score < best.score) {
-				best = step5;
-				best.di = di; // actual value of %di
-				best.OFSDI = ofs; // multiplier for %di
+				if (numWords === 3) {
+					// found combo
+					cnt++;
+
+					// select only the best
+					if (!best || score < best.score) {
+						let step3 = step4.step3;
+						let step2 = step3.step2;
+
+						best = {
+							score: score,
+							step1: step1,
+							step4: step4,
+						};
+					}
+				}
 			}
 		}
 	}
 }
 
-if (!best) {
-	console.error("failed");
+if (!cnt) {
+	console.error("Collect failed");
 	process.exit(1);
 }
+console.error("Collect has " + cnt + " candidates");
 
 {
-	let step5 = best;
-	let step4 = step5.step4;
+	/*
+	 * display best candidate
+	 */
+
+	let step4 = best.step4;
 	let step3 = step4.step3;
 	let step2 = step3.step2;
-	let step1 = step2.step1;
+	let step1 = best.step1;
+	let di = step1.di;
 
-	function toHex(n) {
-		let s = "0000" + n.toString(16);
-		if (n >= 0x100)
-			return "0x" + s.substr(-4, 4);
-		else
-			return "0x" + s.substr(-2, 2);
-	}
-
-	function toChar(ch) {
-		return '\'' + String.fromCharCode(ch) + '\'';
-	}
-
-	let di = step5.di;
-
-	console.log("// STAGE-1 config");
-	console.log("// SI=" + toHex(step1.si) + ',' + toHex(step3.si) + ',' + toHex(step4.si) + ',' + toHex(step5.si));
-	console.log("OFSDI = " + toChar(step5.OFSDI) + " \t// multiplier for initial %di");
-	console.log("HEAD = " + toChar(SIZE - di) + " \t// %di offset to encoded stage3 DATA");
-	console.log("IMM1 = " + toHex(step1.IMM1) + " \t// multiplier for step-1");
-	console.log("IMM2 = " + toHex(step2.IMM2) + " \t// multiplier for step-2");
-	console.log("IMM3 = " + toHex(step3.IMM3) + " \t// multiplier for step-3");
-	console.log("IMM4 = " + toHex(step4.IMM4) + " \t// multiplier for step-4");
-	console.log("IMM5 = " + toHex(step5.IMM5) + " \t// multiplier for step-5");
-	console.log("");
-	console.log("// Patch config");
-	console.log("OFSMEM1 = " + toChar(ADDR1 - di) + " \t// patch offset for step-4");
-	console.log("FIX1H = " + toChar(step4.FIX1H) + " \t// patch for HI-byte");
-	console.log("FIX1L = " + toChar(step4.FIX1L) + " \t// patch for LO-byte");
-	console.log("OFSMEM2 = " + toChar(ADDR2 - di) + " \t// patch offset for step-4");
-	console.log("FIX2H = " + toChar(step4.FIX2H) + " \t// patch for HI-byte");
-	console.log("FIX2L = " + toChar(step4.FIX2L) + " \t// patch for LO-byte");
-	console.log("OFSMEM3 = " + toChar(ADDR3 - di) + " \t// patch offset for step-5");
-	console.log("FIX3H = " + toChar(step5.FIX3H) + " \t// patch for HI-byte");
-	console.log("FIX3L = " + toChar(step5.FIX3L) + " \t// patch for LO-byte");
+	console.log("// Generated by \"" + process.argv[1] + "\"");
+	// console.log("// "+JSON.stringify(best));
+	console.log("// Stage-1 config:");
+	console.log("HASH = " + toHex(step1.hash, 2));
+	console.log("HASHH = " + toChar(step1.hash >> 8, 1) + " \t// decoder hash HI-byte");
+	console.log("HASHL = " + toChar(step1.hash & 0xff, 1) + " \t// decoder hash LO-byte");
+	console.log("SEED = " + toHex(SEED, 2));
+	console.log("SEEDH = " + toChar(SEED >> 8, 1) + " \t// decoder seed HI-byte");
+	console.log("SEEDL = " + toChar(SEED & 0xff, 1) + " \t// decoder seed LO-byte");
+	console.log("OFSHASH = " + toChar((addrHEAD - initialSI) & 0xffff) + " \t// %si offset containing number generator hash, hash=" + toHex(step1.hash));
+	console.log("OFSHEAD = " + toChar((addrHEAD - di) & 0xffff) + " \t// %di offset to output HEAD containing number generator hash");
+	console.log("OFSDATA = " + toChar((addrDATA - di) & 0xffff) + " \t// %di offset to input DATA containing the next character");
+	console.log("IMM1 = " + toHex(step1.IMM1) + " \t// multiplier for step-1. %di=" + toHex(di, 2));
+	console.log("IMM2 = " + toHex(step2.IMM2) + " \t// multiplier for step-2. %si=" + toHex(step2.si, 2) + ", hash=" + toHex(step2.hash, 2));
+	console.log("IMM3 = " + toHex(step3.IMM3) + " \t// multiplier for step-3. %si=" + toHex(step3.si, 2));
+	console.log("IMM4 = " + toHex(step4.IMM4) + " \t// multiplier for step-4. %si=" + toHex(step4.si, 2));
+	console.log("// Patch config:");
+	console.log("OFSMEM1 = " + toChar(ADDR1 - di) + " \t// patch offset for step-3A");
+	console.log("FIX1H = " + toHex(step3.si >> 8, 1) + " \t// patch for HI-byte");
+	console.log("FIX1L = " + toHex(step3.si & 0xff, 1) + " \t// patch for LO-byte");
+	console.log("OFSMEM2 = " + toChar(ADDR2 - di) + " \t// patch offset for step-3B");
+	console.log("FIX2H = " + toHex(step3.si >> 8, 1) + " \t// patch for HI-byte");
+	console.log("FIX2L = " + toHex(step3.si & 0xff, 1) + " \t// patch for LO-byte");
+	console.log("OFSMEM3 = " + toChar(ADDR3 - di) + " \t// patch offset for step-4");
+	console.log("FIX3H = " + toHex(step4.si >> 8, 1) + " \t// patch for HI-byte");
+	console.log("FIX3L = " + toHex(step4.si & 0xff, 1) + " \t// patch for LO-byte");
 }

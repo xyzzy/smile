@@ -1,6 +1,6 @@
 # Welcome to the Wonderful World of ASCII binaries
 
-*When humans and machines share the same alphabet*
+*The marvelous wonders of self modifying code*
 
 "Smile" is an executable ASCII and consists exclusively of digits and lowercase letters.
 
@@ -14,7 +14,7 @@ Those three instructions are by an astronomical improbability capable to jailbre
 
 The code and analysis might look straight forward but bear in mind that more than 800 tries and attempts were made to find the magic combination of instructions.
 
-`TL;DR` The juicy technical bit is the explanation of stage-1 below.
+`TL;DR` The juicy technical bit is about the mother of all instructions (stage1), and the radix13 encoding using ascii art (stage2).
 
 "Smile" is re-mastered from the original 2011 version.
 
@@ -52,11 +52,11 @@ Within a DOS environment and command prompt:
 
   - View as text:
 
-        TYPE smile.com
+	TYPE smile.com
 
   - Run as executable:
 
-        smile
+	smile
 
 ## Instruction set analysis
 
@@ -65,11 +65,11 @@ The file [instructions.txt](instructions.txt) contains an overview of all usable
 In essence only the registers `%si`, `%di`, `%bp`, `%bx`, `%ah` are available, and the instruction classes:
 
 ```assembler
-        xor     reg,OFS(reg,reg)
-        xor     OFS(reg,reg),reg
-        cmp     reg,OFS(reg,reg)
-        imul    $IMM,(reg,reg),reg
-        jXX     OFS
+	xor	reg,OFS(reg,reg)
+	xor	OFS(reg,reg),reg
+	cmp	reg,OFS(reg,reg)
+	imul	$IMM,(reg,reg),reg
+	jXX	OFS
 ```
 
 Each instruction class has a limited combination of registers and offsets.  
@@ -97,24 +97,24 @@ Initial value of `%si` is `0x0100`
 `%si` is volatile because it is the only register that can be used for the number generator  
 
 ```assembly
-        xor     (breg,ireg),%si
-        xor     (%si),%si
-        xor     (%di),%si
-        xor     (%bx),%si
-        xor     OFS(breg,ireg),%si
-        xor     OFS(reg),%si
-        imul    $IMM,(breg,ireg),%si
-        imul    $IMM,(%si),%si
-        imul    $IMM,(%di),%si
-        imul    $IMM,(%bx),%si
-        imul    $IMM,OFS(breg,ireg),%si
-        imul    $IMM,OFS(reg),%si
-        imul    $IMM,(breg,ireg),%si
-        imul    $IMM,(%si),%si
-        imul    $IMM,(%di),%si
-        imul    $IMM,(%bx),%si
-        imul    $IMM,OFS(breg,ireg),%si
-        imul    $IMM,OFS(reg),%si
+	xor	(breg,ireg),%si
+	xor	(%si),%si
+	xor	(%di),%si
+	xor	(%bx),%si
+	xor	OFS(breg,ireg),%si
+	xor	OFS(reg),%si
+	imul	$IMM,(breg,ireg),%si
+	imul	$IMM,(%si),%si
+	imul	$IMM,(%di),%si
+	imul	$IMM,(%bx),%si
+	imul	$IMM,OFS(breg,ireg),%si
+	imul	$IMM,OFS(reg),%si
+	imul	$IMM,(breg,ireg),%si
+	imul	$IMM,(%si),%si
+	imul	$IMM,(%di),%si
+	imul	$IMM,(%bx),%si
+	imul	$IMM,OFS(breg,ireg),%si
+	imul	$IMM,OFS(reg),%si
 ```
 
 ### Instructions that write/modify `%di`
@@ -124,12 +124,12 @@ Initial value of `%di` is `0xfffe`
 `%si` is needed to modify `%di`.
 
 ```assembly
-        xor     (%bx,ireg),%di
-        xor     OFS(%bx,ireg),%di
-        xor     OFS(%bp,%si),%di
-        imul    $IMM,(%bx,ireg),%di
-        imul    $IMM,OFS(%bx,%ireg),%di
-        imul    $IMM,OFS(%bp,%si),%di
+	xor	(%bx,ireg),%di
+	xor	OFS(%bx,ireg),%di
+	xor	OFS(%bp,%si),%di
+	imul	$IMM,(%bx,ireg),%di
+	imul	$IMM,OFS(%bx,%ireg),%di
+	imul	$IMM,OFS(%bp,%si),%di
 ```
 
 ### Instructions that write/modify `%bp`
@@ -140,12 +140,12 @@ Only way to write to `%bp` is by using `imul`.
 The `imul` requires an ascii-safe register offset, requiring a preloaded anchor register.
 
 ```assembly
-        xor     OFS(breg,ireg),%bp      
-        xor     OFS(reg),%bp          
-        imul    $IMM,OFS(breg,ireg),%bp 
-        imul    $IMM,OFS(reg),%bp     
-        imul    $IMM,OFS(breg,ireg),%bp 
-        imul    $IMM,OFS(reg),%bp     
+	xor	OFS(breg,ireg),%bp      
+	xor	OFS(reg),%bp	  
+	imul	$IMM,OFS(breg,ireg),%bp 
+	imul	$IMM,OFS(reg),%bp     
+	imul	$IMM,OFS(breg,ireg),%bp 
+	imul	$IMM,OFS(reg),%bp     
 ```
 
 ### Instructions that modify `%bx`
@@ -156,9 +156,9 @@ Only the high byte can be modified.
 `%bx` only use is for the number generator described below.
 
 ```assembly
-        xor     (%bx,ireg),%bh
-        xor     OFS(%bx,ireg),%bh
-        xor     OFS(%bp,%si),%bh
+	xor	(%bx,ireg),%bh
+	xor	OFS(%bx,ireg),%bh
+	xor	OFS(%bp,%si),%bh
 ```
 
 ### Instructions that can be used before an anchor register is loaded
@@ -167,23 +167,23 @@ The anchor register can be used with ascii-safe offsets to patch stage2.
 Excluding instructions that use the undefined `%bh` and `%bp`
 
 ```assembly
-        xor     %si,(%bx,ireg)
-        xor     %si,(%si)
-        xor     %si,(%di)
-        xor     %si,(%bx)
-        xor     %di,(%bx,ireg)
-        
-        xor     (%bx,ireg),%si
-        xor     (%si),%si
-        xor     (%di),%si
-        xor     (%bx),%si
-        xor     (%bx,ireg),%di
-        
-        imul	$IMM,(%bx,ireg),%si
-        imul	$IMM,(%si),%si
-        imul	$IMM,(%di),%si
-        imul	$IMM,(%bx),%si
-        imul	$IMM,(%bx,ireg),%di
+	xor	%si,(%bx,ireg)
+	xor	%si,(%si)
+	xor	%si,(%di)
+	xor	%si,(%bx)
+	xor	%di,(%bx,ireg)
+	
+	xor	(%bx,ireg),%si
+	xor	(%si),%si
+	xor	(%di),%si
+	xor	(%bx),%si
+	xor	(%bx,ireg),%di
+	
+	imul	$IMM,(%bx,ireg),%si
+	imul	$IMM,(%si),%si
+	imul	$IMM,(%di),%si
+	imul	$IMM,(%bx),%si
+	imul	$IMM,(%bx,ireg),%di
 ```
 
 ## Implementation
@@ -195,11 +195,14 @@ The multi-stage design is to escape the limitations of a more than critical redu
     It is encoded as ascii-safe string and unpacked by stage 2
 
   - Stage-2: The unpacker.  
+    Optimised loader thats converts the radix13 encoded ascii art converter to
     The ascii-safe instruction-set is incomplete to do anything really useful.  
     Unsafe bytes are made safe replacing them with a placeholder value that need to patched before the code can be executed.
 
   - Stage-1: The patcher.  
     A gem of improbability jumping through hoops to patch/self-modify stage-2 into something runnable.
+
+In effect, stage1 prepares the input and output pointers, stage2 unpacks the most efficient decoder and stage3 is the demo.
 
 ### Stage 1
 
@@ -221,16 +224,16 @@ In case of emergency, there is a second range having ascii-digit values
 Until the reference register has been loaded, offsets are unavailable reducing the available instructions:
 
 ```assembler
-        // `ireg` is either %si or %di
-        // `reg` is either %si, %di or %bx
+	// `ireg` is either %si or %di
+	// `reg` is either %si, %di or %bx
         
-        xor     %si,(reg)
-        xor     ireg,(%bx,ireg)
-        xor     (reg),%si
-        xor     (%bx,ireg),ireg
+	xor	%si,(reg)
+	xor	ireg,(%bx,ireg)
+	xor	(reg),%si
+	xor	(%bx,ireg),ireg
        
-        imul	$IMM,(reg),%si
-        imul	$IMM,(%bx,ireg),ireg
+	imul	$IMM,(reg),%si
+	imul	$IMM,(%bx,ireg),ireg
 ```
 
 `reg`, can be one of `%si`, `%di`, `%bx`.  
@@ -247,18 +250,18 @@ Using them only makes sense when the input values are defined.
 DOS initializes the following environment with fixed values:
 
 ```
-        %si = 0x0100  
-        %di = 0xfffe  
-        %bx = 0x0000  
-        (%bx) = 0x20cd 
+	%si = 0x0100  
+	%di = 0xfffe  
+	%bx = 0x0000  
+	(%bx) = 0x20cd 
 ```
 
-Applying these as constraints to the set of base instructions above reduces it further to:
+Applying these as constraints to the set of base instructions above, reduces it further to:
 
 ```assembler
-        xor     %si,(%bx)
-        xor     (%bx),%si
-        imul	$IMM,(%bx),%si
+	xor	%si,(%bx)
+	xor	(%bx),%si
+	imul	$IMM,(%bx),%si
 ```
 
 These are the only three instructions available until `%si` or `%di` contains a reference location.
@@ -271,29 +274,37 @@ The `imul` creates a new value based on a stored hash and given seed, and writes
 A second step for continuation used the `xor` to update the hash value.
 
 ```assembler
-        imul    $SEED,(%bx),%si         // next number in register
-        xor     %si,(%bx)               // next number in memory
+	imul    $SOMESEED,(%bx),%si	// next number in register
+        xor	%si,(%bx)		// next number in memory
 ```
 
 The idea is to craft a sequence of specific seed/multipliers that create the necessary values to patch stage 2.
 
 ```assembler
-        // generate number
-        imul    $SEED,(%bx),%si
-        xor     %si,(%bx)
+	// generate number
+	imul	$SOMESEED,(%bx),%si
+	xor	%si,(%bx)
 
-        // populate reference register %di (=%si+OFS)
-        xor     OFS(%bx,%si),%di
+	// with %si as temporary reference register, load %di
+	imul	$SOMESEED,OFS(%bx,%si),%di
 
-        REPEAT {
-                // generate number
-                imul    $SEED,(%bx),%si
-                xor     %si,(%bx)
+	REPEAT {
+		// generate number
+		imul	$SOMESEED,(%bx),%si
+		xor	%si,(%bx)
 
-                // patch memory
-                xor     %si,OFS(%di)
-        }
+		// patch memory
+		xor	%si,OFS(%di)
+	}
 ```
+
+#### Re-mastering bonus
+
+After writing the above section and re-mastering the sources:
+
+New insights made it possible to reduce the size of stage1 to under 48 bytes.  
+This makes extra instruction available that allow the loading of %di as first step.  
+Effectively halving the size of stage1.
 
 ### Stage 2
 
@@ -302,7 +313,7 @@ The input stream is limited range text and influences the number generator
 The output stream are binary snapshots of the number generator.  
 The encoder creates text that requires the least number of generator cycles.
 
-Task is to load stage 3, an arithmetic based radix23 character encoding.  
+Task is to load stage 3, an arithmetic based radix13 character encoding.  
 Stage 3 will load the actual demo.  
 For really large demos, there is also an additional zip-based loader.
 
@@ -324,21 +335,22 @@ The block comments are written towards the instructions, the inline comments tow
 	 * Update hash at head of extracted data
 	 */
 
-	imul	$SEED,HEAD(%bx,%di),%si	  	   //*      update hash     **/     WORD si = (SEED * *pHash) & 0xffff;   
-   	xorw	%si,HEAD(%bx,%di)		       //*     number generator **/     *pHash ^= si;
+	imul	$SEED,HEAD(%bx,%di),%si		 //* update hash	  **/	WORD si = (SEED * *pHash) & 0xffff;   
+   	xorw	%si,HEAD(%bx,%di)		 //* number generator     **/	*pHash ^= si;
    	
 	/*
 	 * step-2: output byte
 	 *
-	 * If high bit of hash is set then low byte contains next byte.
-	 * Increment %bx to shift hash one byte leaving the desired output byte behind
+	 * If high bit of hash is set then the low byte is the next byte.
+	 * Increment %bx to shift the hash one byte leaving the desired output byte behind
 	 * 
-     * Trick by using a byte increment is that the hash will inherit half the information.  
-     * The encoder can use this knowledge to craft a lookahead, finding the shortest path to a specific state. 
+	 * Trick by using a byte instead of word increment is, that the hash will inherit half the run-time information.
+	 * This inheritance influences the outcome of the generator that can attain the next output value in a single cycle.  
+	 * The encoder can use this knowledge to craft a lookahead, finding the shortest path to a specific state. 
 	 */
 	 
-	jns     L2				              //* is it cmd:byteReady   **/     if (*pHash & BYTEREADY)
-	inc	    %bx                           //* shift output position **/         outPtr++;
+	jns	L2				//* is it cmd:byteReady   **/	if (*pHash & BYTEREADY)
+	inc	%bx				//* shift output position **/		outPtr++;
 
 	/*
 	 * step-3: load next input byte
@@ -349,10 +361,10 @@ The block comments are written towards the instructions, the inline comments tow
 	 * Injection is a memory-memory operation, use %ah as intermediate byte. %ax is initially 0x0000.
 	 */
 L2:
-	xorb	HEAD(%di),%ah			      //* load next input byte  **/     BYTE ah = *inPtr;
-	inc	%di				                  //* shift input position  **/     inPtr++;
-	dec	%bx			            	      //* relative / absolute   **/    
-	xorb	%ah,HEAD+1(%bx,%di)	          //* inject into generator **/     *pHash ^= ah << 8;
+	xorb	HEAD(%di),%ah			//* load next input byte  **/	BYTE ah = *inPtr;
+	inc	%di				//* shift input position  **/	inPtr++;
+	dec	%bx				//* relative / absolute   **/    
+	xorb	%ah,HEAD+1(%bx,%di)		//* inject into generator **/	*pHash ^= ah << 8;
 
 	/*
 	 * step-4: loop until finished
@@ -361,14 +373,143 @@ L2:
 	 * This however should not happen for the low-byte because emitting a zero is a valid situation.
 	 */
 	 
-	jne	stage2Start			        //* repeat until end-of-sequence */   } UNTIL ((*pHash & 0xff00) == 0);
+	jne	stage2start		  //* repeat until end-of-sequence */	} UNTIL ((*pHash & 0xff00) == 0);
 ```
 
 Loading and using a second register would increase the code size by some 30%.  
-An alternative approach is to use a single pointer register and save the relative distance.
+An alternative approach is to use a single pointer register and use a preloaded second for the relative distance.  
 The register `%bx` has been inherited from stage 1, and it is initialised with the value zero.
 
-#### rot 13 rot 13
+There is a race condition at the very start.  
+The input and output share the same location.  
+Updating the generator hash would immediately corrupt the first two input characters.  
+To avoid this situation, the next input byte should be located in front of the hash.
+
+Stage2 needs to be able to access the heads of output and input which are located directly after stage2.
+
+#### Stage3
+
+Stage-2 mainloop is a streaming radix converter.  
+Digits are considered radix10, lowercase is considered radix13.  
+Output is radix256.
+
+```
+	// load next character from text data and increment
+	WORD ax = *inPtr++;
+
+	// test for alpha or numeric
+	if (isDigit(ax))
+		dx *= 10;	// grow pool for radix10
+	else if (isAlpha(ax)
+		dx *= 13;	// grow pool for radix13
+	else
+		continue;	// no, next character    
+
+	// inject input value into pool
+	dx += ax;
+
+	// test if byte present
+	if (dx & 0xff00) {
+		// test for end-of-sequence     
+		if (dx == 999)
+			break; // found     
+
+		// save byte and increment position
+		*outPtr++ = dx & 0xff;
+
+		// extract byte from pool
+		dx >>= 8;  
+	}
+```
+
+#### radix13 encoding
+
+/our alphabet is beautiful/
+
+The ascii art visuals require ascend lowercase letters, "acemnorsuvwxz".  
+For the numerology, they represent the 13 values ranging from 0 to 12.  
+A linear conversion from ascii to value is not available.  
+A table lookup would be second choice.  
+A 26 entry table is depreciated due to their memory footprint.
+
+Time for analysis:
+
+There are 26 lowercase letters.  
+13 (exactly half) are desired to be used in text.  
+Intuitively, the core of conversion routine would exploit halving the asci value.  
+Displaying them in a 2x13 array and striking out the undesired:
+
+```
+ace***mo*suw*
+******n*r*vxz
+```
+
+The top row holds the even ascii values, the bottom row holds the uneven.  
+If each column is able to hold a single character, it would be an ideal situation.
+If the bottom row were to rotate they might "sync" making conversion a linear function.
+
+Rotating the bottom row to the left 7 places:
+
+```
+ace***mo*suw*
+*r*vxz******n
+```
+
+That is a near perfect fit. The only letter standing out is "r".
+Also, the "n" jumps location which complicates the code.
+
+Shifting top row to the right 1, and bottom row to the left 6 places:
+
+```
+*ace***mo*suw
+n*r*vxz******
+         ^-----NOTE
+```
+
+There is an unused column, and by cosmic coincidence, it has the same position as the clashing "r" above.
+
+Excluding the "r", shift the top row 1 to the right, and the bottom row 6 to the left.
+
+```
+*ace***mo*suw
+n***vxz**r***
+```
+
+Perfect situation, as each column has a single character it is now easy to determine the ordinal value.  
+However, all the ascii values are mixed making the ordinal value non-sensible.  
+This is solved by the encoder transforming the letters values to match their location after being shifted.
+
+The encoder maps values to letters using this table:
+
+| value | character |
+|:----:|:----:|
+|  0 | n |
+|  1 | a |
+|  2 | c |
+|  3 | e |
+|  4 | v |
+|  5 | x |
+|  6 | z |
+|  7 | m |
+|  8 | o |
+|  9 | r |
+| 10 | s |
+| 11 | u |
+| 12 | w |
+
+The decoder converts the letter to number using this code:
+
+```
+	sub	$'a',%al	// convert letter to ordinal number
+	sub	$2,%al		// shift top/bottom row to the right 1 position
+	shr	%al		// determine row/column
+	jnc	done		// jump if even
+	cmp	$9,%al		// what about "r"?
+	je	done		// jump if "r"
+	sub	$7,%al		// shift "vxz"
+```
+
+The first two instructions can be optimised in different ways.
 
 ## Versioning
 

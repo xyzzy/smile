@@ -6,9 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## 0.1.0 2018-08-10
-
-### Added
-- Initial creation
+```
+2021-02-06 01:37:59 Changed: Stage 1 loads %di on first `imul`.
+2021-02-03 23:19:59 Historic commit.
+```
 
 [Unreleased]: https://github.com/xyzzy/smile/compare/v0.1.0...HEAD
