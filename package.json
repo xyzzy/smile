@@ -1,0 +1,17 @@
+{
+  "name": "smile",
+  "version": "0.0.0",
+  "description": "ASCII-friendly binaries",
+  "main": "none",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xyzzy/smile.git"
+  },
+  "author": "xyzzy@rockingship.org",
+  "license": "GPL-3.0-or-later",
+  "homepage": "https://github.com/xyzzy/smile",
+  "dependencies": {
+    "fs": "0.0.1-security",
+    "minimist": "1.2.5"
+  }
+}

@@ -344,9 +344,10 @@ The block comments are written towards the instructions, the inline comments tow
 	 * If high bit of hash is set then the low byte is the next byte.
 	 * Increment %bx to shift the hash one byte leaving the desired output byte behind
 	 * 
-	 * Trick by using a byte instead of word increment is, that the hash will inherit half the run-time information.
-	 * This inheritance influences the outcome of the generator that can attain the next output value in a single cycle.  
-	 * The encoder can use this knowledge to craft a lookahead, finding the shortest path to a specific state. 
+	 * Trick by using a byte instead of word increment is that the hash will inherit half the run-time
+	 * information. This inheritance influences the outcome of the generator that can (with a 
+	 * carefully chosen multiplier) attain the next output value in a single cycle. The encoder can use
+	 * this knowledge to craft a lookahead, finding the shortest path to a specific state. 
 	 */
 	 
 	jns	L2				//* is it cmd:byteReady   **/	if (*pHash & BYTEREADY)
@@ -444,7 +445,7 @@ ace***mo*suw*
 ******n*r*vxz
 ```
 
-The top row holds the even ascii values, the bottom row holds the uneven.  
+The top row holds the odd ascii values, the bottom row holds the even.  
 If each column is able to hold a single character, it would be an ideal situation.
 If the bottom row were to rotate they might "sync" making conversion a linear function.
 
