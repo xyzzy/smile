@@ -16,6 +16,18 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/*
+ * Changelog:
+ *
+ * @date 2021-02-08 22:52:07
+ *
+ * The end-of-sequence marker was to generic causing many encoding rejections.
+ * End-of-sequence is now flagged by the head hash becoming zero.
+ * Downside is that the input needs to be loaded as a word.
+ * Improvement reduces encoded stage3 with ~20 bytes.
+ * The original encoding was 216 characters, now it is 146.
+ */
+
 	.code16
 
 // load configuration
@@ -98,10 +110,10 @@ stage2Start:
 	 * Injection is a memory-memory operation, use %ah as intermediate byte. %ax is initially 0x0000.
 	 */
 L2:
-	.byte	0x32,0x66,OFSDATA		// 0126: 32 66 X	xorb	OFSDATA(%di),%ah		//* load next input byte
+	.byte	0x6b,0x6d,OFSTEXT-1,0x6e	// 0125: 6b 6d X 6e	imul	$'n',OFSTEXT-1(%di),%bp		//* use input text as word to generate next number
 	.byte	0x47^FIX2L			// 0129: 47		inc	%di				//* shift input position
 	.byte	0x4b^FIX2H			// 012a: 4b		dec	%bx				//* increment distance input/output, decrement because %bx is used negatively
-	.byte	0x30,0x61,OFSHEAD+1		// 012b: 30 61 X	xorb	%ah,OFSHEAD+1(%bx,%di)		//* inject into HEAD high-byte
+	.byte	0x31,0x69,OFSHEAD		// 012b: 31 69 78	xorw	%bp,OFSHEAD(%bx,%di)		//* Inject entropy into HEAD
 
 	/*
 	 * step-4: loop until finished

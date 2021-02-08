@@ -3,23 +3,23 @@
 HASH = 0x6668
 HASHH = 'f' 	// decoder hash HI-byte
 HASHL = 'h' 	// decoder hash LO-byte
-SEED = 0x6161
-SEEDH = 'a' 	// decoder seed HI-byte
-SEEDL = 'a' 	// decoder seed LO-byte
+SEED = 0x6e72
+SEEDH = 'n' 	// decoder seed HI-byte
+SEEDL = 'r' 	// decoder seed LO-byte
 OFSHASH = '0' 	// %si offset containing number generator hash, hash=0x6668
 OFSHEAD = 'x' 	// %di offset to output HEAD containing number generator hash
-OFSDATA = 'z' 	// %di offset to input DATA containing the next character
+OFSTEXT = 'z' 	// %di offset to input TEXT containing the next character
 IMM1 = 0x73 	// multiplier for step-1. %di=0x00b8
-IMM2 = 0x6365 	// multiplier for step-2. %si=0x37e1, hash=0x172c
-IMM3 = 0x7777 	// multiplier for step-3. %si=0x3974
-IMM4 = 0x736f 	// multiplier for step-4. %si=0xd014
+IMM2 = 0x65 	// multiplier for step-2. %si=0xf0e1, hash=0xd02c
+IMM3 = 0x6577 	// multiplier for step-3. %si=0x2074
+IMM4 = 0x6575 	// multiplier for step-4. %si=0x801c
 // Patch config:
 OFSMEM1 = 'l' 	// patch offset for step-3A
-FIX1H = 0x39 	// patch for HI-byte
-FIX1L = 0x74 	// patch for LO-byte
+FIX1H = 0 	// patch for HI-byte
+FIX1L = 0 	// patch for LO-byte
 OFSMEM2 = 'q' 	// patch offset for step-3B
-FIX2H = 0x39 	// patch for HI-byte
-FIX2L = 0x74 	// patch for LO-byte
+FIX2H = 0 	// patch for HI-byte
+FIX2L = 0 	// patch for LO-byte
 OFSMEM3 = 'v' 	// patch offset for step-4
-FIX3H = 0xd0 	// patch for HI-byte
-FIX3L = 0x14 	// patch for LO-byte
+FIX3H = 0 	// patch for HI-byte
+FIX3L = 0 	// patch for LO-byte

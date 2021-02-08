@@ -128,7 +128,7 @@ function generate(seed, cache) {
 
 				// determine new number and update hash
 				const si = (seed * obj.hash) & 0xffff;
-				let hash = obj.hash ^ obj.ah ^ si;
+				let hash = obj.hash ^ si;
 
 				// time to live
 				let step = obj.step + 1;
@@ -161,16 +161,20 @@ function generate(seed, cache) {
 				if (step > maxStepLength)
 					continue;
 
-				/*
-				 * update entropy source
-				 *
-				 * NOTE: subtracting 0x30:
-				 *       - allows for stage1 to detect and skip spaces
-				 *       - reduces encoded output from ~280 bytes to ~170
-				 *       - increases stage1 by about ~10 bytes
-				 */
-				let ah = obj.ah ^ (val - 0x30);
-				if (ah === 0) {
+				// load input text as word. This includes the actual text byte and the byte preceding because that is defined.
+				let bp = val << 8; // text letter goes in upper byte
+				if (obj.text.length === 0)
+					bp |= hash >> 8; // no previous output, use hi-byte of hash which is located there
+				else
+					bp |= obj.text[obj.text.length - 1]; // load previous text byte into lower byte
+
+				// number generator
+				bp = (bp * 0x6e) & 0xffff;
+				// update hash
+				hash ^= bp;
+
+				// test end condition
+				if (hash === 0x0000) {
 					// terminator
 					if (codeLength !== data.length) {
 						// not yet
@@ -184,21 +188,8 @@ function generate(seed, cache) {
 					}
 				}
 
-				/*
-				 * load next character
-				 * NOTE: %ah is not the actual character but the XOR or all previous characters.
-				 * NOTE: an %ah of zero flags end-of-sequence
-				 */
-				// let ah = obj.ah ^ val;
-
-				/* construct index based on starting position next step
-				 *
-				 * The instruction reordering of stage2 causes %ah to be updated last.
-				 * This has the effect that the input character is delayed one step.
-				 * The cache used the character to track alternative paths.
-				 * For that reason, derive the index from the current character, not the previous.
-				 */
-				let ix = ((obj.text.length + 1) << 16) | (hash ^ val);
+				// construct index based on starting position next step
+				let ix = ((obj.text.length + 1) << 16) | hash;
 
 				// add to cache
 				if (!cache[ix] || codeLength > cache[ix].codeLength) {
@@ -211,20 +202,19 @@ function generate(seed, cache) {
 
 					// create new object
 					cache[ix] = {
-						val: toHex(val, 1),
-						ohash: toHex(obj.hash, 2),
-						si: toHex(si, 2),
-						seed: toHex(seed, 2),
-
-						ix: ix,
 						hash: hash,
-						ah: ah,
-
-						step: step,
-
 						codeLength: codeLength,
+						step: step,
 						text: text,
-						oldix: obj,
+
+						// for debugging
+
+						// val: toHex(val, 1),
+						// seed: toHex(seed, 2),
+						// oldHash: toHex(obj.hash, 2),
+						// si: toHex(si, 2),
+						// ix: ix,
+						// prev: obj,
 					};
 				}
 			}
@@ -260,39 +250,58 @@ function validate(seed, hash, text) {
 	 * decode
 	 */
 
-	let codePos = 0;
-	let textPos = 2;
-	let ah = 0;
+	let si = 0, di = 0, bx = 0, bp = 0;
+	let OFSHEAD = 0;
+	let OFSTEXT = 2;
 
-	while (textPos < mem.length) {
+	while (di < mem.length) {
+		/*
+		 * emulate stage2
+		 */
 
-		let si = (seed * (mem[codePos] + mem[codePos + 1] * 256)) & 0xffff;
+		// stage2Start:
+		// 011b: 69 75 X X X	imul	$SEED,OFSHEAD(%bx,%di),%si	//* update hash
+		si = (seed * (mem[OFSHEAD + bx + di + 0] + mem[OFSHEAD + bx + di + 1] * 256)) & 0xffff;
 
-		mem[codePos] ^= ah;
-		mem[codePos] ^= si & 0xff;
-		mem[codePos + 1] ^= si >> 8;
+		// 0120: 31 75 X	xorw	%si,OFSHEAD(%bx,%di)		//* number generator
+		mem[OFSHEAD + bx + di + 0] ^= si & 0xff;
+		mem[OFSHEAD + bx + di + 1] ^= si >> 8;
 
-		if (mem[codePos + 1] & 0x80) {
-			codePos++;
-			// mem[codePos] = si & 0xff;
-			// mem[codePos + 1] = si >> 8;
+		// 0123: 79 04		jns	L2				//* jump is sign bit clear
+		if (mem[OFSHEAD + bx + di + 1] & 0x80) {
+			// 0125: 43		inc	%bx				//* shift output position
+			bx++;
 		}
+		// L2:
+		// 0125: 6b 6d X 6e	imul	$'n',OFSTEXT-1(%di),%bp		//* use input text as word to generate next number
+		bp = (0x6e * (mem[OFSTEXT - 1 + di + 0] + mem[OFSTEXT - 1 + di + 1] * 256)) & 0xffff;
 
-		ah ^= (mem[textPos] - 0x30);
-		textPos++;
+		// 0129: 47		inc	%di				//* shift input position
+		di++;
+
+		// 012a: 4b		dec	%bx				//* increment distance input/output, decrement because %bx is used negatively
+		bx--;
+
+		// 012b: 31 69 78	xorw	%bp,OFSHEAD(%bx,%di)		//* Inject entropy into HEAD
+		mem[OFSHEAD + bx + di + 0] ^= bp & 0xff;
+		mem[OFSHEAD + bx + di + 1] ^= bp >> 8;
+
+		// 012e: 75 e5		jne	stage2Start			//* repeat until end-of-sequence
+		if (mem[OFSHEAD + bx + di + 0] === 0x00 && mem[OFSHEAD + bx + di + 1] === 0x00)
+			break;
 	}
+	let codeLen = di + bx;
 
-	// compame memory
+	// compare memory
 	let match = 1;
-	for (let i=0; i<codePos; i++)
+	for (let i = 0; i < codeLen; i++)
 		if (data[i] !== mem[i])
 			match = 0;
 
-	if (!match || ah !== 0 || codePos !== data.length) {
+	if (!match || codeLen !== data.length) {
 		console.log("Verify failed", JSON.stringify({
-			ah: ah,
 			encodeLength: data.length,
-			decodeLength: codePos,
+			decodeLength: codeLen,
 			match: match,
 			encode: Array.from(data),
 			decode: mem

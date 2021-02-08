@@ -50,8 +50,9 @@
  */
 
 // SEED/multiplier for stage3
+// NOTE: should be even for best results
 // NOTE: This is the authoritative declaration
-let SEED = 0x6161;
+let SEED = 0x6e72;
 
 let ADDR1 = 0x0124;
 let WORD1 = 0x4304;
@@ -64,7 +65,7 @@ let stage2Start = 0x011b;			// start location of stage2
 let stage2Size = 0x0130 - 0x011b;		// length of stage2
 
 let addrHEAD = stage2Start + stage2Size;	// directly after stage2 is the output head containing the number generator hash
-let addrDATA = addrHEAD + 2;			// directly after HEAD in the first data byte
+let addrTEXT = addrHEAD + 2;			// directly after HEAD in the first text byte
 
 /*
  * Initial values for msdos/freedos
@@ -131,11 +132,11 @@ for (let imm = 0; imm < 256; imm++) {
 
 				// directly after stage2 is the output head containing the number generator hash
 				let ofsHEAD = stage2Start + stage2Size;
-				// directly after HEAD in the first data byte
-				let ofsDATA = ofsHEAD + 2;
+				// directly after HEAD in the first text byte
+				let OFSTEXT = ofsHEAD + 2;
 
 				// locations should be accessible
-				if (!isSafe8[ADDR1 - di] || !isSafe8[ADDR2 - di] || !isSafe8[ADDR3 - di] || !isSafe8[ofsDATA - di])
+				if (!isSafe8[ADDR1 - di] || !isSafe8[ADDR2 - di] || !isSafe8[ADDR3 - di] || !isSafe8[OFSTEXT - di])
 					continue;
 
 				let score = isSafe8[imm];
@@ -164,7 +165,7 @@ for (let imm = 0; imm < 65536; imm++) {
 				let di = (hash * imm) & 0xffff;
 
 				// locations should be accessible
-				if (!isSafe8[ADDR1 - di] || !isSafe8[ADDR2 - di] || !isSafe8[ADDR3 - di] || !isSafe8[addrDATA - di])
+				if (!isSafe8[ADDR1 - di] || !isSafe8[ADDR2 - di] || !isSafe8[ADDR3 - di] || !isSafe8[addrTEXT - di])
 					continue;
 
 				let score = isSafe16[imm] + 256; // add word penalty
@@ -427,7 +428,7 @@ for (let iStep1 = 0; iStep1 < 65536; iStep1++) {
 				let score = step1.score + step4.score;
 				let numWords = score >> 8;  // high byte contains number or words
 
-				if (numWords === 3) {
+				if (numWords === 2) {
 					// found combo
 					cnt++;
 
@@ -476,7 +477,7 @@ console.error("Collect has " + cnt + " candidates");
 	console.log("SEEDL = " + toChar(SEED & 0xff, 1) + " \t// decoder seed LO-byte");
 	console.log("OFSHASH = " + toChar((addrHEAD - initialSI) & 0xffff) + " \t// %si offset containing number generator hash, hash=" + toHex(step1.hash));
 	console.log("OFSHEAD = " + toChar((addrHEAD - di) & 0xffff) + " \t// %di offset to output HEAD containing number generator hash");
-	console.log("OFSDATA = " + toChar((addrDATA - di) & 0xffff) + " \t// %di offset to input DATA containing the next character");
+	console.log("OFSTEXT = " + toChar((addrTEXT - di) & 0xffff) + " \t// %di offset to input TEXT containing the next character");
 	console.log("IMM1 = " + toHex(step1.IMM1) + " \t// multiplier for step-1. %di=" + toHex(di, 2));
 	console.log("IMM2 = " + toHex(step2.IMM2) + " \t// multiplier for step-2. %si=" + toHex(step2.si, 2) + ", hash=" + toHex(step2.hash, 2));
 	console.log("IMM3 = " + toHex(step3.IMM3) + " \t// multiplier for step-3. %si=" + toHex(step3.si, 2));
