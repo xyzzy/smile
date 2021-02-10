@@ -7,8 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ```
+2021-02-10 21:23:25 Added: Inter-program communication through `Makefile.config`. 
 2021-02-08 23:28:17 Changed: Redesigned end-of-sequence detection in stage2.
-2021-02-08 00:50:30 Added: `genStage3.js`.
+2021-02-08 00:50:30 Added: `genStage2.js`.
 2021-02-06 01:37:59 Changed: Stage 1 loads %di on first `imul`.
 2021-02-03 23:19:59 Historic commit.
 ```

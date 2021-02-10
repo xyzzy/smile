@@ -4,7 +4,7 @@
 
 "Smile" is an executable ASCII and consists exclusively of digits and lowercase letters.
 
-  - Viewed as text, it shows ascii art consisting of digits and the ascender free lowercase letter "acemnorsuvwxz".  
+  - Viewed as text, it shows ascii art consisting of digits and the ascendless lowercase letter "acemnorsuvwxz".  
     The difference in contrast between the height of letters and digits should highlight the embedded artwork.
 
   - Running as a MS-DOS/FreeDOS binary, it displays a kaleidoscope.
@@ -13,6 +13,9 @@ Reducing the instruction set by removing all opcodes that are not alphanumerical
 Those three instructions are by an astronomical improbability capable to jailbreak those restrictions.
 
 The code and analysis might look straight forward but bear in mind that more than 800 tries and attempts were made to find the magic combination of instructions.
+
+When it was first created in 2011 it was much more impressive.  
+Running under XP, you simply change the extension and double-click it.
 
 `TL;DR` The juicy technical bit is about the mother of all instructions (stage1), and the radix13 encoding using ascii art (stage2).
 
@@ -40,7 +43,7 @@ The chances that what is left can produce an executable is so astronomically sma
 
 "Smile" does take advantage of a DOS environment:
 
-  - DOS `.com` programs do not require a binary header.
+  - DOS `.com` programs do not require a binary header.  
     The contents of a `.com` are loaded verbatim at address `0x0100` and run unconditionally.
 
   - Self-modifying code.  
@@ -298,6 +301,14 @@ The idea is to craft a sequence of specific seed/multipliers that create the nec
 	}
 ```
 
+`smile` uses three number generators.
+
+The stage 1 generator is to patch stage 2, called `HASH` and located at `(%bx)`.
+
+The stage 2 generator is to unpack stage 3, called `HEAD` and located at `OFSHEAD(%bx,%di)`.
+
+The third generator is to feed entropy into `HEAD`, and is located as it passed through the input text.
+
 #### Re-mastering bonus
 
 After writing the above section and re-mastering the sources:
@@ -327,6 +338,22 @@ In the text/input-data there are also encoded two commands:
 
 Side by side comparison to the stage2 decoder with left the reduced instruction set and right a "C" like equivalent.
 The block comments are written towards the instructions, the inline comments towards the language code.
+
+Stage2 has two number generators.
+The main generator is to generate selected numbers that creates outputs bytes.  
+The head of the output holds the generator hash, its position increments when desired numbers have been reached.  
+Entropy is injected into the generator to steer the outcome efficiently.  
+The more efficient, the shorter the encoded stream.  
+Injection data is the encoded text.  
+The limited range of the input bytes limits the effect of the entropy.
+To increase the dynamic, a second number generator is used fed by the input text.  
+The secondary, full-word value is used to feed the main generator.
+
+This approach allows an average of 2.6 radix13 characters to produce a single byte value.  
+56 bytes of code require 146 characters of storage.
+
+data/code will be unpacked directly after stage2.
+When decoding has completed, the looping "jne" instruction will step directly into stage3 like it was normal program flow.
 
 ```
 	/*
@@ -423,11 +450,11 @@ Output is radix256.
 	}
 ```
 
-#### radix13 encoding
+#### Radix13 encoding
 
 /our alphabet is beautiful/
 
-The ascii art visuals require ascend lowercase letters, "acemnorsuvwxz".  
+The ascii art visuals require ascendless lowercase letters, "acemnorsuvwxz".
 For the numerology, they represent the 13 values ranging from 0 to 12.  
 A linear conversion from ascii to value is not available.  
 A table lookup would be second choice.  
@@ -511,6 +538,47 @@ The decoder converts the letter to number using this code:
 ```
 
 The first two instructions can be optimised in different ways.
+
+## Files
+
+  - `instructions.txt`
+    Available ascii-safe instructions.
+
+  - `Makefile`
+    Descriptions of the build/construction process.
+
+  - `template.txt`
+    Ascii art template.
+
+  - `stage12.S`
+    Stage1 (patcher) and stage2 (pre-loader) sources.
+
+  - `genStage1.js`
+    Generate fixups for stage1.
+
+  - `stage3.S`
+    Stage3 (loader) source.
+
+  - `genStage3.js`
+    Encode stage3 (loader) as mixed radix10/radix13 text.
+
+  - `stage4.c`
+    Stage4 (demo) source.
+
+  - `genStage4.js`
+    Encode stage4 (demo) as mixed radix10/radix13 text.
+
+  - `token.S`
+    Token based compression decoder.
+
+  - `genToken.js`
+    Token based compression encoder emitting radix10/radix13 text.
+
+  - `LISTING.txt`
+    Conceptual listing of the stages together.
+
+  - `Makefile.config`
+    Used for inter-program communication sharing generated details.
 
 ## Versioning
 

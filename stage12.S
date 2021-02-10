@@ -1,5 +1,5 @@
 /*
- *  This file is part of smile: ASCII safe binaries
+ *  This file is part of smile: ASCII-safe binaries
  *  Copyright (C) 2011, 2021, xyzzy@rockingship.org
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -30,8 +30,44 @@
 
 	.code16
 
+#if defined(MINIMAL) && MINIMAL
+
+// STAGE-1
+OFSHASH='n' 	// %si offset containing number generator hash, hash=0x6668
+HASH1=0x20cd	// number generator to patch stage2 code
+SEEDDI=0x6e	// multiplier for step-1A.
+SEEDSI=0x6e 	// multiplier for step-1B.
+SEEDFIX12=0x6e 	// multiplier for step-1C.
+SEEDFIX3=0x6e 	// multiplier for step-1D.
+OFSFIX1='n' 	// patch offset for step-2B
+FIX1H=0x00	// patch for HI-byte
+FIX1L=0x00 	// patch for LO-byte
+OFSFIX2='n' 	// patch offset for step-2C
+FIX2H=0x00 	// patch for HI-byte
+FIX2L=0x00 	// patch for LO-byte
+OFSFIX3='n' 	// patch offset for step-2D
+FIX3H=0x00 	// patch for HI-byte
+FIX3L=0x00 	// patch for LO-byte
+
+// STAGE-2A
+OFSHEAD='n' 	// %di offset to output HEAD containing number generator hash
+HASHHEAD=0x6e6e	// number generator hash to create unpack values
+HASHHEADH='n' 	// decoder hash HI-byte
+HASHHEADL='n' 	// decoder hash LO-byte
+SEEDHEAD=0x6e6e
+
+// STAGE-2B
+OFSTEXT='n' 	// %di offset to input TEXT containing the next character
+SEEDTEXT=0x6e	// number generator to seed HASHHEAD
+
+#else
 // load configuration
 #include "stage12.inc"
+#endif
+
+// split seed into hi-lo byte
+SEEDHEADL=(SEEDHEAD & 0xff)
+SEEDHEADH=(SEEDHEAD >> 8)
 
 	/**
 	 * STAGE-1
@@ -41,34 +77,34 @@
 stage1Start:
 
 	/*
-	 * step-1: Create %di from hash located at end of stage-2
+	 * step-1A: Create %di from hash located at end of stage-2
 	 *	   NOTE: the initial hash must be even
 	 */
 
 	// when calling from DEBUG.EXE, don't forget to set %si=0x0100
-	imul	$IMM1,OFSHASH(%bp,%si),%di	// load %di
+	imul	$SEEDDI,OFSHASH(%bx,%si),%di	// load %di
 
 	/*
-	 * step-2: Add entropy to the number generator
+	 * step-1B: Add entropy to the number generator
 	 */
 
-	imul	$IMM2,(%bx),%si		// next number
+	imul	$SEEDSI,(%bx),%si	// next number
 	xor	%si,(%bx)		// update hash
 
 	/*
-	 * step-3: Generate number and patch stage2
+	 * step-1C: Generate number and patch stage2
 	 */
 
-	imul	$IMM3,(%bx),%si		// next number
- 	xor	%si,OFSMEM1(%di)	// patch word
- 	xor	%si,OFSMEM2(%di)	// patch word
+	imul	$SEEDFIX12,(%bx),%si	// next number
+ 	xor	%si,OFSFIX1(%di)	// patch word
+ 	xor	%si,OFSFIX2(%di)	// patch word
 
 	/*
-	 * step-4: Generate number and patch stage2
+	 * step-1D: Generate number and patch stage2
 	 */
 
-	imul	$IMM4,(%bx),%si		// next number
- 	xor	%si,OFSMEM3(%di)	// patch word
+	imul	$SEEDFIX3,(%bx),%si	// next number
+ 	xor	%si,OFSFIX3(%di)	// patch word
 
 	/**
 	 * STAGE-2
@@ -76,52 +112,55 @@ stage1Start:
 	 * Unpack stage-3
 	 *
 	 * Use register %di for bor both input and output data
-	 * Use %bx (initial value 0x0000) to indicate the difference in dytancd between input/output
+	 * Use %bx (initial value 0x0000) to indicate the difference in distance between input/output
+	 *
+	 * NOTE: Instruction changes also need to be applied to `genStage1.js`.
 	 */
 stage2Start:
 
 	//      v---- patched code               v-- unpatched code     v-- instruction                         v-- comment
 
 	/*
-	 * step-1: generate number
+	 * step-2A: generate number
 	 *
 	 * Update hash at head of extracted data
 	 */
 
-	.byte	0x69,0x75,OFSHEAD,SEEDL,SEEDH	// 011b: 69 75 X X X	imul	$SEED,OFSHEAD(%bx,%di),%si	//* update hash
-   	.byte	0x31,0x75,OFSHEAD		// 0120: 31 75 X	xorw	%si,OFSHEAD(%bx,%di)		//* number generator
+	.byte	0x69,0x71,OFSHEAD,SEEDHEADL,SEEDHEADH	// 011a: 69 71 X X X	imul	$SEED,OFSHEAD(%bx,%di),%si	//* update hash
+   	.byte	0x31,0x71,OFSHEAD		// 011f: 31 71 X	xorw	%si,OFSHEAD(%bx,%di)		//* number generator
 
 	/*
-	 * step-2: output byte
+	 * step-2B: output byte
 	 *
 	 * If high bit of hash is set then low byte contains next byte.
 	 * Increment %bx to shift hash one byte leaving the desired output byte behind
 	 */
 
-	.byte	0x79,0x04^FIX1L			// 0123: 79 04		jns	L2				//* jump is sign bit clear
-	.byte	0x43^FIX1H			// 0125: 43		inc	%bx				//* shift output position
+	.byte	0x79,0x01^FIX1L			// 0122: 79 01		jns	L2				//* jump is sign bit clear
+	.byte	0x43^FIX1H			// 0124: 43		inc	%bx				//* shift output position
 
 	/*
-	 * step-3: load next input byte
+	 * step-2C: load next input byte
 	 *
 	 * Load next byte from input by incrementing %di, decrement %di to keep the output position
 	 * Inject the loaded byte into the low-byte of the hash for maximum effect.
-	 * Injecting into the low-byte has an undesired side-effect for step-4, so inject into the high-byte.
+	 * Injecting into the low-byte has an undesired side-effect for step-2D, so inject into the high-byte.
 	 * Injection is a memory-memory operation, use %ah as intermediate byte. %ax is initially 0x0000.
 	 */
 L2:
-	.byte	0x6b,0x6d,OFSTEXT-1,0x6e	// 0125: 6b 6d X 6e	imul	$'n',OFSTEXT-1(%di),%bp		//* use input text as word to generate next number
+	.byte	0x6b,0x6d,OFSTEXT-1,SEEDTEXT	// 0125: 6b 6d X X	imul	$SEEDTEXT,OFSTEXT-1(%di),%bp	//* use input text as word to generate next number
 	.byte	0x47^FIX2L			// 0129: 47		inc	%di				//* shift input position
 	.byte	0x4b^FIX2H			// 012a: 4b		dec	%bx				//* increment distance input/output, decrement because %bx is used negatively
-	.byte	0x31,0x69,OFSHEAD		// 012b: 31 69 78	xorw	%bp,OFSHEAD(%bx,%di)		//* Inject entropy into HEAD
+	.byte	0x31,0x69,OFSHEAD		// 012b: 31 69 X	xorw	%bp,OFSHEAD(%bx,%di)		//* Inject entropy into HEAD
 
 	/*
-	 * step-4: loop until finished
+	 * step-2D: loop until finished
 	 *
 	 * Injecting where the result is zero can be used as trigger to indicate end-of-sequence.
 	 * This however should not happen for the low-byte because emitting a zero is a valid situation.
 	 */
-	.byte	0x75^FIX3L,0xe5^FIX3H		// 012e: 75 e5		jne	stage2Start			//* repeat until end-of-sequence
-stage2End:
+	.byte	0x75^FIX3L,0xea^FIX3H		// 012e: 75 ea		jne	stage2Start			//* repeat until end-of-sequence
 
-	.byte	HASHL, HASHH			// Initial hash
+stage3Start:
+	// Initial hash, and later first instruction of stage3
+	.byte	HASHHEADL, HASHHEADH		

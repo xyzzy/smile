@@ -1,4 +1,4 @@
-# List of (usable) ascii safe instructions
+# List of (usable) ascii-safe instructions
 # removed are:
 #   - all instructions reading/writing absolute addresses
 #   - all instructions using %sp
