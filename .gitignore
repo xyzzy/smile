@@ -1,0 +1,34 @@
+.backup/
+.deps/
+.idea/
+
+# files created by autotools
+Makefile
+Makefile.in
+aclocal.m4
+autom4te.cache/
+config.h
+config.h.in
+config.log
+config.status
+configure
+m4/
+stamp-h1
+
+# generated files
+Makefile.config
+minimal.com
+minimal.lst
+stage1.inc
+stage12.com
+stage12.lst
+stage3.com
+stage3.lst
+stage3.asc
+stage4.com
+stage4.lst
+stage4.asc
+
+*.bak
+*.gz
+*.o
