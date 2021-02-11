@@ -9,10 +9,11 @@
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = subdir-objects
 
-EXTRA_DIST = LICENSE.txt CHANGELOG.md README.md .gitignore autogen.sh
+EXTRA_DIST = LICENSE.txt CHANGELOG.md README.md LISTING.txt instructions.txt .gitignore autogen.sh package.json package-lock.json \
+		template.txt smile.lds genStage1.js genStage2.js genStage3.js stage12.S stage3.S stage4.c
 
-.PRECIOUS:   Makefile.config minimal.com stage1.inc stage3.com stage3.asc stage12.com stage4.com stage4.asc
-CLEANFILES = Makefile.config minimal.com stage1.inc stage3.com stage3.asc stage12.com stage4.com stage4.asc smile.com
+.PRECIOUS:   Makefile.config minimal.com minimal.lst stage1.inc stage12.com stage12.lst stage3.com stage3.lst stage3.asc stage4.com stage4.lst stage4.asc
+CLEANFILES = Makefile.config minimal.com minimal.lst stage1.inc stage12.com stage12.lst stage3.com stage3.lst stage3.asc stage4.com stage4.lst stage4.asc smile.com
 
 #
 # Load the Makefile configuration, if present.
@@ -29,8 +30,10 @@ Makefile.config :
 	echo 'STAGE3BASE=0x0130' >> Makefile.config
 	echo 'INITSI=0x0100' >> Makefile.config
 	echo 'INITHASH=0x20cd' >> Makefile.config
-	echo 'SEEDTEXT=0x6e' >> Makefile.config		# User defined ascii-safe value that is even.
-	echo 'STAGE3EOS=1' >> Makefile.config		# User defined ascii-safe value that is even.
+	echo 'SEEDTEXT=0x6e' >> Makefile.config		# User defined ascii-safe value that is even
+	echo 'SEEDHEAD=0x00' >> Makefile.config		# placeholder
+	echo 'STAGE4BASE=0x0000' >> Makefile.config	# placeholder
+
 
 # STEP 2:
 #  Create minimalistic stage1 (patcher) + stage2 (pre-loader) for analysis
@@ -52,6 +55,7 @@ stage1.inc : genStage1.js minimal.com Makefile.config
 
 # STEP 4:
 #  Create stage3 (loader) image.
+#  Requires: STAGE3EOS
 
 stage3.com : stage3.S smile.lds stage1.inc
 	@echo "#Step-4"
@@ -70,20 +74,19 @@ stage3.asc : stage3.com template.txt genStage2.js Makefile.config
 
 
 # STEP 6:
-#  Create actual stage1+2 (pre-loader), overwriting the default value for SEEDHEAD
-#  Pass SEEDHEAD as compiler argument as not to trigger file changes and reloads
-#  SEEDHEAD is provided by `stage3.asc`.
+#  Create actual stage1+2 (pre-loader)
+#  Requires: SEEDHEAD
 
-stage12.com : stage12.S stage1.inc smile.lds stage1.inc stage3.asc
+stage12.com : stage12.S stage1.inc smile.lds stage1.inc
 	@echo "#Step-6"
-	gcc -o stage12.o $< -c -m32 -fno-asynchronous-unwind-tables -march=i386 -mtune=i386 -g0 -DSEEDHEAD=${SEEDHEAD}
+	gcc -o stage12.o $< -c -m32 -fno-asynchronous-unwind-tables -march=i386 -mtune=i386 -g0
 	ld -o $@ stage12.o -T smile.lds -Ttext ${STAGE1BASE}
 	objdump $@ -D -b binary -m i386 -M addr16,data16 --adjust-vma=${STAGE1BASE} >stage12.lst
 
 # STEP 7:
 #  Compile stage4 (demo)
 
-stage4.com : stage4.c smile.lds
+stage4.com : stage4.c smile.lds Makefile.config
 	@echo "#Step-7"
 	gcc -o stage4.o $< -m32 -march=i386 -mtune=i386 -g0 -c -Os -fno-zero-initialized-in-bss -fomit-frame-pointer -fno-asynchronous-unwind-tables
 	ld -o stage4.com stage4.o -T smile.lds -Ttext ${STAGE4BASE}
@@ -91,7 +94,8 @@ stage4.com : stage4.c smile.lds
 
 # STEP 8:
 #  Encode stage4 (demo) as mixed radix10/radix13
-#  Requires: STAGE3EOS, STAGE4BASE, STAGE4OFFSET
+#  Requires: STAGE4BASE, STAGE4OFFSET
+#  Provides: STAGE3EOS
 
 stage4.asc : stage4.com template.txt genStage3.js Makefile.config
 	@echo "#Step-8"
@@ -116,7 +120,7 @@ smile.com : stage12.com stage3.asc stage4.asc
 
 all-local:
 	@echo 
-	@echo "Type: make stage12.com"
+	@echo "Type: make smile.com"
 	@echo
-	@echo Re-run the above until nothing changes.
+	@echo !! Re-run the above until nothing changes.
 	@echo

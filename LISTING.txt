@@ -1,0 +1,208 @@
+	/**
+	 * STAGE-1
+	 *
+	 * Patches missing instructions into stage 2
+	 */
+stage1Start:
+
+	/*
+	 * step-1A: Create %di from hash located at end of stage-2
+	 *	   NOTE: the initial hash must be even
+	 */
+
+	// when calling from DEBUG.EXE, don't forget to set %si=0x0100
+	imul	$SEEDDI,OFSHASH(%bx,%si),%di	// load %di
+
+	/*
+	 * step-1B: Add entropy to the number generator
+	 */
+
+	imul	$SEEDSI,(%bx),%si	// next number
+	xor	%si,(%bx)		// update hash
+
+	/*
+	 * step-1C: Generate number and patch stage2
+	 */
+
+	imul	$SEEDFIX12,(%bx),%si	// next number
+ 	xor	%si,OFSFIX1(%di)	// patch word
+ 	xor	%si,OFSFIX2(%di)	// patch word
+
+	/*
+	 * step-1D: Generate number and patch stage2
+	 */
+
+	imul	$SEEDFIX3,(%bx),%si	// next number
+ 	xor	%si,OFSFIX3(%di)	// patch word
+
+	/**
+	 * STAGE-2
+	 *
+	 * Unpack stage-3
+	 *
+	 * Use register %di for bor both input and output data
+	 * Use %bx (initial value 0x0000) to indicate the difference in distance between input/output
+	 *
+	 * NOTE: Instruction changes also need to be applied to `genStage1.js`.
+	 */
+stage2Start:
+
+	/*
+	 * step-2A: generate number
+	 *
+	 * Update hash at head of extracted data
+	 */
+
+	imul	$SEED,OFSHEAD(%bx,%di),%si	//* update hash
+   	xorw	%si,OFSHEAD(%bx,%di)		//* number generator
+
+	/*
+	 * step-2B: output byte
+	 *
+	 * If high bit of hash is set then low byte contains next byte.
+	 * Increment %bx to shift hash one byte leaving the desired output byte behind
+	 */
+
+	jns	L2				//* jump is sign bit clear
+	inc	%bx				//* shift output position
+
+	/*
+	 * step-2C: load next input byte
+	 *
+	 * Load next byte from input by incrementing %di, decrement %di to keep the output position
+	 * Inject the loaded byte into the low-byte of the hash for maximum effect.
+	 * Injecting into the low-byte has an undesired side-effect for step-2D, so inject into the high-byte.
+	 * Injection is a memory-memory operation, use %ah as intermediate byte. %ax is initially 0x0000.
+	 */
+L2:
+	imul	$SEEDTEXT,OFSTEXT-1(%di),%bp	//* use input text as word to generate next number
+	inc	%di				//* shift input position
+	dec	%bx				//* increment distance input/output, decrement because %bx is used negatively
+	xorw	%bp,OFSHEAD(%bx,%di)		//* Inject entropy into HEAD
+
+	/*
+	 * step-2D: loop until finished
+	 *
+	 * Injecting where the result is zero can be used as trigger to indicate end-of-sequence.
+	 * This however should not happen for the low-byte because emitting a zero is a valid situation.
+	 */
+	jne	stage2Start			//* repeat until end-of-sequence
+
+	/**
+	 * STAGE-3
+	 *
+	 * Convert an extremely long mixed radix10/radix13 number into an radix256 number.
+	 */
+stage3Start:
+	clr	%dx			// clear pool
+	mov	Stage4Start,%di		// start of stage4
+
+GetEnum:
+	inc	%bp			// pre-increment
+	movzx	'z'(%bp),%ax		// load next character from code string
+
+	subb	$'a'-2,%al		// test for alpha. Need the extra 2 for the charset decoding
+	jae	GotAlpha		// yes, jump higher or same
+	subb	$'0'-'a'+2,%al		// test for numeric (and compensate for the previous -2)
+	jb	GetEnum			// no, next char
+
+GotNumeric:
+	imul    $10,%dx,%dx		// grow pool for radix10
+	jmp	GotEnum
+
+GotAlpha:
+	imul	$13,%dx,%dx		// grow pool for radix13
+
+	shr	%al			// convert charset encoding
+	jnc	GotEnum			// jump if even
+	cmp	$9,%al			// if "vxz" shift to fill gap for values "456"
+	je	GotEnum
+	sub	$7,%al
+
+GotEnum:
+	addw	%ax,%dx			// inject
+
+	orb	%dh,%dh			// test if byte present
+	je	GetEnum			// no, keep lurking
+	cmp	$0x999,%dx		// test for terminator
+	je	Stage4Start		// jump if found
+
+	movb	%dl,(%di)		// save byte
+	inc	%di			// post-increment
+
+	shrw	$8,%dx			// reduce pool
+	jmp	GetEnum			// loop
+
+
+	/**
+	 * STAGE-4
+	 *
+	 * Stipped down to essence demo
+	 */
+Stage4Start:
+
+int start() {
+
+extern unsigned char esByte[] asm ("%es:0");
+extern unsigned char fsByte[] asm ("%fs:0");
+extern unsigned char gsByte[] asm ("%gs:0");
+extern unsigned short gsWord[] asm ("%gs:0");
+
+    // set center spot
+    fsByte[(HEIGHT + 2) / 2 * (WIDTH + 2) + (WIDTH + 2) / 2]++;
+
+    while ((ReadInputStatus() & 0xff) == 0) {
+
+        unsigned short si = (WIDTH + 2) * (HEIGHT + 1) - 1;
+        unsigned short bx = WIDTH * HEIGHT;
+
+        do {
+
+            int cx = WIDTH;
+            do {
+                si--;
+                bx--;
+                cx--;
+
+                // get new pixel value
+                unsigned char px = fsByte[si];
+
+                if (px) {
+                    px++;
+                } else {
+                    unsigned char dx = 0;
+
+                    if (!DIAMONDS) {
+                        dx += fsByte[si - WIDTH - 2 - 1] +
+                              fsByte[si - WIDTH - 2 + 1] +
+                              fsByte[si + WIDTH + 2 - 1] +
+                              fsByte[si + WIDTH + 2 + 1];
+                    }
+                    dx += fsByte[si - WIDTH - 2] +
+                          fsByte[si - 1] +
+                          fsByte[si + 1] +
+                          fsByte[si + WIDTH + 2];
+
+                    px = 0;
+                    if ((signed char) dx > precise || dx == pattern1 || dx == pattern2)
+                        px = 1;
+                }
+
+                if (px == numStates) {
+                    px = liveOrDie;
+                    fsByte[(HEIGHT + 2) / 2 * (WIDTH + 2) + (WIDTH + 2) / 2]++;
+                }
+
+                // write pixel to SCREEN
+                esByte[si] = px;
+                gsByte[bx] = px;
+            } while (cx != 0);
+
+            si -= 2;
+
+        } while (bx != 0);
+
+        // swap ef/fs
+        __asm__ __volatile__ ("push %es; push %fs; pop %es; pop %fs");
+
+    }

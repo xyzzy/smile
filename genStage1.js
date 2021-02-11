@@ -51,11 +51,11 @@ let INITSI = 0x0100;		// initial value of %si
 let INITHASH = 0x20cd;		// initial value of (%bx)
 let SEEDHEAD = 0x6e6e;		// word seed for output number generator.
 let SEEDTEXT = 0x6e;		// byte seed for input text number generator.
-
+let STAGE3EOS = 0x0100;		// stage3 end-of-sequence token.
 let numPromote;			// number of bytes to expand to words
 
-// some generated hashes fail with `genStage3.js`. List those here
-let excludeHash = [0x6668, 0x6962, 0x6534,0x6632,0x3236];
+// some generated hashes fail with `genStage2.js`. List those here
+let excludeHash = [0x6668, 0x6962, 0x6534, 0x6632, 0x3236];
 
 /*
  * safe ascii characters in order of desirability
@@ -150,7 +150,7 @@ function saveConfig(fileName, args) {
  */
 
 function usage() {
-	console.error("usage: <stage12.inc> <stage12.com>");
+	console.error("usage: <stage1.inc> <stage12.com>");
 	console.error("        --config=<filename>   Makefile configuration.");
 	console.error("        --STAGE1BASE=<value>  Designed start stage1.  [default=" + toHex(STAGE1BASE, 2) + "]");
 	console.error("        --STAGE3BASE=<value>  Designed start stage3.  [default=" + toHex(STAGE3BASE, 2) + "]");
@@ -158,6 +158,7 @@ function usage() {
 	console.error("        --INITHASH=<value>    Initial value of (%bx). [default=" + toHex(INITHASH, 2) + "]");
 	console.error("        --SEEDHEAD=<value>    Word seed for output number generator. [default=" + toHex(SEEDHEAD, 2) + "]");
 	console.error("        --SEEDTEXT=<value>    Byte seed for input number generator. [default=" + toHex(SEEDTEXT, 1) + "]");
+	console.error("        --STAGE3EOS=<value>   End-of-sequence token.  [default=" + toHex(STAGE3EOS, 2) + "]");
 	process.exit(1);
 }
 
@@ -173,6 +174,10 @@ for (const opt in argv) {
 		STAGE1BASE = Number.parseInt(argv[opt]);
 	} else if (opt === "STAGE3BASE") {
 		STAGE3BASE = Number.parseInt(argv[opt]);
+		if (STAGE3BASE - STAGE1BASE < 0x30 || STAGE3BASE - STAGE1BASE > 0x39) {
+			console.error("Error: STAGE3BASE is out of range");
+			process.exit(1);
+		}
 	} else if (opt === "INITSI") {
 		INITSI = Number.parseInt(argv[opt]);
 	} else if (opt === "INITHASH") {
@@ -187,6 +192,12 @@ for (const opt in argv) {
 		SEEDTEXT = Number.parseInt(argv[opt]);
 		if (!isSafe8[SEEDTEXT]) {
 			console.error("Error: seedtext is not ascii-safe");
+			process.exit(1);
+		}
+	} else if (opt === "STAGE3EOS") {
+		STAGE3EOS = Number.parseInt(argv[opt]);
+		if (STAGE3EOS < 0x0100 || STAGE3EOS > 0xff*10) {
+			console.error("Error: STAGE3EOS is out of range");
 			process.exit(1);
 		}
 	} else if (opt === "config") {
@@ -206,14 +217,26 @@ for (const opt in argv) {
 			SEEDHEAD = config.SEEDHEAD;
 		if (config.SEEDTEXT)
 			SEEDTEXT = config.SEEDTEXT;
+		if (config.STAGE3EOS)
+			STAGE3EOS = config.STAGE3EOS;
 	} else if (opt === "h" || opt === "help") {
 		usage();
 	} else {
 		usage();
 	}
 }
-if (args.count < 2)
+if (args.length < 2)
 	usage();
+
+console.log("#Using: " + JSON.stringify({
+	STAGE1BASE: toHex(STAGE1BASE, 2),
+	STAGE3BASE: toHex(STAGE3BASE, 2),
+	INITSI: toHex(INITSI, 2),
+	INITHASH: toHex(INITHASH, 2),
+	SEEDHEAD: toHex(SEEDHEAD, 2),
+	SEEDTEXT: toHex(SEEDTEXT, 2),
+	STAGE3EOS: toHex(STAGE3EOS, 2),
+}));
 
 let incFilename = args[0];
 let comFilename = args[1];
@@ -226,7 +249,7 @@ let data;
 try {
 	data = new Uint8Array(fs.readFileSync(comFilename));
 } catch (e) {
-	console.error("failed to load input. " + e.toString());
+	console.error("Failed to load input. " + e.toString());
 	process.exit(1);
 }
 
@@ -621,7 +644,7 @@ for (let iStep1 = 0; iStep1 < 65536; iStep1++) {
 }
 
 if (!cnt) {
-	console.error("Collect failed");
+	console.error("Error: Failed to create stage1.");
 	process.exit(1);
 }
 console.error("Collect has " + cnt + " candidates");
@@ -659,17 +682,19 @@ result += "FIX2L = " + toHex(step3.si & 0xff, 1) + " \t// patch for LO-byte\n";
 result += "OFSFIX3 = " + toChar(FIXADDR3 - di) + " \t// patch offset for step-2D\n";
 result += "FIX3H = " + toHex(step4.si >> 8, 1) + " \t// patch for HI-byte\n";
 result += "FIX3L = " + toHex(step4.si & 0xff, 1) + " \t// patch for LO-byte\n";
-result += "// Stage-2A\n"
+result += "// Stage-2A\n";
 result += "OFSHEAD = " + toChar(OFSHEAD) + " \t// %di offset to output HEAD containing stage2 number generator hash\n";
 result += "HASHHEAD = " + toHex(HASHHEAD, 2) + '\n';
 result += "HASHHEADH = " + toChar(HASHHEAD >> 8, 1) + " \t// decoder hash HI-byte\n";
 result += "HASHHEADL = " + toChar(HASHHEAD & 0xff, 1) + " \t// decoder hash LO-byte\n";
 result += "#if !defined(SEEDHEAD)\n";
-result += "SEEDHEAD = " + toHex(SEEDHEAD, 2) + " \t// supplied by genStage3.js\n";
+result += "SEEDHEAD = " + toHex(SEEDHEAD, 2) + " \t// supplied by genStage2.js\n";
 result += "#endif\n";
 result += "// Stage-2B\n";
 result += "OFSTEXT = " + toChar(OFSTEXT) + " \t// %di offset to input TEXT containing the next character\n";
 result += "SEEDTEXT = " + toHex(SEEDTEXT, 1) + " \t// ascii-safe user defined\n";
+result += "// Stage-3\n";
+result += "STAGE3EOS = " + toHex(STAGE3EOS, 2) + " \t// stage3 end-of-sequence token\n";
 
 // save
 try {
@@ -699,6 +724,15 @@ if (config) {
 
 		saveConfig(configFilename, config);
 
-		console.error("Updated configuration file \"" + configFilename + "\"");
+		console.error("#Provides: " + JSON.stringify({
+			OFSHASH: toHex(OFSHASH, 1),
+			OFSHEAD: toHex(OFSHEAD, 1),
+			OFSTEXT: toHex(OFSTEXT, 1),
+			HASHHEAD: toHex(HASHHEAD, 2),
+		}));
+
+		console.error("#Updated configuration file \"" + configFilename + "\"");
+
+
 	}
 }

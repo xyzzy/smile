@@ -62,7 +62,7 @@ SEEDTEXT=0x6e	// number generator to seed HASHHEAD
 
 #else
 // load configuration
-#include "stage12.inc"
+#include "stage1.inc"
 #endif
 
 // split seed into hi-lo byte

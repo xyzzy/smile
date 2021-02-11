@@ -544,8 +544,8 @@ The first two instructions can be optimised in different ways.
   - `instructions.txt`
     Available ascii-safe instructions.
 
-  - `Makefile`
-    Descriptions of the build/construction process.
+  - `Makefile.am`
+    Contains descriptions of the build/construction process.
 
   - `template.txt`
     Ascii art template.
@@ -578,7 +578,29 @@ The first two instructions can be optimised in different ways.
     Conceptual listing of the stages together.
 
   - `Makefile.config`
-    Used for inter-program communication sharing generated details.
+    Used for inter-program communication sharing generator details.
+
+## Building
+
+No need for autotools when building, `Makefile.am` is a regular makefile.  
+Invoke with `make -f Makefile.am smile.com`.
+
+Autotools is used for its maintainer and distribution benefits.
+
+If you like to build with autotools:
+
+```
+        ./autogen.sh    # optionally if autotools are not setup
+        ./configure     # simple configure
+        make smile.com  # 😊
+```
+
+Important: re-run make until nothing changes
+
+The project consists of multiple stage generators/encoders and loaders/decoders.
+The generators encoded the next stage into text, including decoding instructions (as macros) for the loaders.  
+Generators may change `Makefile.config` when replacing macro placeholders with actual values.  
+Changes should trigger makefile reloading which restart construction.
 
 ## Versioning
 
