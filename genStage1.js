@@ -53,6 +53,7 @@ let SEEDHEAD = 0x6e6e;		// word seed for output number generator.
 let SEEDTEXT = 0x6e;		// byte seed for input text number generator.
 let STAGE3EOS = 0x0100;		// stage3 end-of-sequence token.
 let numPromote;			// number of bytes to expand to words
+let STAGE3OFFSET;		 // end of stage2 + HEAD
 
 // some generated hashes fail with `genStage2.js`. List those here
 let excludeHash = [0x6668, 0x6962, 0x6534, 0x6632, 0x3236];
@@ -196,7 +197,7 @@ for (const opt in argv) {
 		}
 	} else if (opt === "STAGE3EOS") {
 		STAGE3EOS = Number.parseInt(argv[opt]);
-		if (STAGE3EOS < 0x0100 || STAGE3EOS > 0xff*10) {
+		if (STAGE3EOS < 0x0100 || STAGE3EOS > 0xff * 10) {
 			console.error("Error: STAGE3EOS is out of range");
 			process.exit(1);
 		}
@@ -237,6 +238,9 @@ console.log("#Using: " + JSON.stringify({
 	SEEDTEXT: toHex(SEEDTEXT, 2),
 	STAGE3EOS: toHex(STAGE3EOS, 2),
 }));
+
+// update actual values
+STAGE3OFFSET = STAGE3BASE - STAGE1BASE + 2; // end of stage2 + HEAD
 
 let incFilename = args[0];
 let comFilename = args[1];
@@ -294,6 +298,13 @@ for (let i = 0; i < data.length; i++) {
 	}
 }
 
+// remove \r\n
+for (let i = fixups.length - 1; i >= 0; --i) {
+	if (fixups[i].orig === 0x0a0d)
+		fixups.splice(i, 1); // delete element
+}
+
+
 if (fixups.length !== 3) {
 	console.error("Error: supporting only 3 fixups");
 	for (let i = 0; i < fixups.length; i++)
@@ -305,6 +316,10 @@ if (fixups.length !== 3) {
 let {addr: FIXADDR1, orig: FIXWORD1} = fixups[0];
 let {addr: FIXADDR2, orig: FIXWORD2} = fixups[1];
 let {addr: FIXADDR3, orig: FIXWORD3} = fixups[2];
+
+console.log(toHex(FIXADDR1, 2) + ": " + toHex(FIXWORD1, 2));
+console.log(toHex(FIXADDR2, 2) + ": " + toHex(FIXWORD2, 2));
+console.log(toHex(FIXADDR3, 2) + ": " + toHex(FIXWORD3, 2));
 
 /*
  * step-1: Create %di from hash located at end of stage-2
@@ -613,6 +628,10 @@ for (let iStep1 = 0; iStep1 < 65536; iStep1++) {
 	let step1 = step1Data[iStep1];
 	if (step1) {
 
+		// let HEAD be radix13 because its on the second line
+		// if (isSafe16[step1.hash] !== 2)
+		// 	continue;
+
 		for (let iStep4 = 0; iStep4 < 65536; iStep4++) {
 			let step4 = step4Data[iStep4];
 			if (step4) {
@@ -708,28 +727,29 @@ try {
  * Update config if changed
  */
 
-console.error("OFSHASH=" + toHex(OFSHASH, 1) + ", OFSHEAD=" + toHex(OFSHEAD, 1) + ", OFSTEXT=" + toHex(OFSTEXT, 1) + ", HASHHEAD=" + toHex(HASHHEAD, 2));
+console.error("#Provides: " + JSON.stringify({
+	OFSHASH: toHex(OFSHASH, 1),
+	OFSHEAD: toHex(OFSHEAD, 1),
+	OFSTEXT: toHex(OFSTEXT, 1),
+	HASHHEAD: toHex(HASHHEAD, 2),
+	STAGE3OFFSET: STAGE3OFFSET,
+}));
 
 if (config) {
 	if (
 		config.OFSHASH !== OFSHASH ||
 		config.OFSHEAD !== OFSHEAD ||
 		config.OFSTEXT !== OFSTEXT ||
-		config.HASHHEAD !== HASHHEAD
+		config.HASHHEAD !== HASHHEAD ||
+		config.STAGE3OFFSET !== STAGE3OFFSET
 	) {
 		config.OFSHASH = toHex(OFSHASH, 1);
 		config.OFSHEAD = toHex(OFSHEAD, 1);
 		config.OFSTEXT = toHex(OFSTEXT, 1);
 		config.HASHHEAD = toHex(HASHHEAD, 2);
+		config.STAGE3OFFSET = STAGE3OFFSET;
 
 		saveConfig(configFilename, config);
-
-		console.error("#Provides: " + JSON.stringify({
-			OFSHASH: toHex(OFSHASH, 1),
-			OFSHEAD: toHex(OFSHEAD, 1),
-			OFSTEXT: toHex(OFSTEXT, 1),
-			HASHHEAD: toHex(HASHHEAD, 2),
-		}));
 
 		console.error("#Updated configuration file \"" + configFilename + "\"");
 

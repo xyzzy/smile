@@ -144,3 +144,6 @@ int start() {
     ExitProgram(0);
     for (;;); // suppress generation of return overhead
 }
+
+// add some trailing data to fill the template
+char trailer[] = "xyzzy@rockingship.org";

@@ -28,7 +28,7 @@
  *        pool = pool * 10 + decodeRadix10(*inPtr++);
  *
  *      if (pool & 0xff00) {
- *        // pool overflows, extract a byte
+ *        // pool contains a radix256 number, extract a byte
  *        *outPtr++ = pool;
  *        pool >>= 8;
  *      }

@@ -108,6 +108,9 @@ smile.com : stage12.com stage3.asc stage4.asc
 	@echo "#Step-9"
 	cat stage12.com stage3.asc stage4.asc >smile.com
 	chmod +x smile.com
+	@echo "#"
+	@echo "# re-run until nothing changes"
+	@echo "#"
 
 # STEP 10
 #  Inspect outcome, adapt `template.txt` if necessary and rerun when something changed.

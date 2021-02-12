@@ -159,7 +159,11 @@ L2:
 	 * Injecting where the result is zero can be used as trigger to indicate end-of-sequence.
 	 * This however should not happen for the low-byte because emitting a zero is a valid situation.
 	 */
-	.byte	0x75^FIX3L,0xea^FIX3H		// 012e: 75 ea		jne	stage2Start			//* repeat until end-of-sequence
+	.byte	0x75,0xea^FIX3L		// 012e: 75 ea		jne	stage2Start			//* repeat until end-of-sequence
+
+	// insert CRLF
+	.byte 0x35^FIX3H, 0x0d, 0x0a
+						// 12e:	35 0d 0a             	xor    $0xa0d,%ax
 
 stage3Start:
 	// Initial hash, and later first instruction of stage3

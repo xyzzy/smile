@@ -41,9 +41,9 @@
 
 let fs = require("fs");
 
-let STAGE3EOS = 1;		// End-of-sequence marker.
 let STAGE4BASE = 0x0130;	// designed start of stage4.
 let STAGE4OFFSET = 0;		// Starting position in template
+let STAGE3EOS;			// End-of-sequence marker.
 
 /*
  * radix10/radix13 character set
@@ -185,6 +185,14 @@ try {
 	process.exit(1);
 }
 
+let template;
+try {
+	template = new Uint8Array(fs.readFileSync(templateFilename));
+} catch (e) {
+	console.error("Failed to load input. " + e.toString());
+	process.exit(1);
+}
+
 /*
  * Encode number
  */
@@ -192,9 +200,12 @@ try {
 /**
  * Generate encoded text and return shortest possibility
  *
- * @param {number} eos - end-of-sequence token
+ * @param {number} eos        - end-of-sequence token
+ * @param {number} tpos       - Starting position in template
+ * @param {number} tinc       - Template increment
+ * @param {number} minLength  - Add leading zeros until length matches
  */
-function generate(eos) {
+function generate(eos, tpos, tinc, minLength) {
 
 	let text = [];
 	let pool = eos;
@@ -204,7 +215,7 @@ function generate(eos) {
 
 		// extract characters until pool is in underflow
 		for (; ;) {
-			if (1) {
+			if (tpos < 0 || tpos >= template.length || template[tpos] === 0x2e) {
 				// radix13
 				if (pool < 13)
 					break; // underflow
@@ -212,7 +223,7 @@ function generate(eos) {
 				// extract character
 				text.push(radix13[pool % 13]);
 				pool = Math.floor(pool / 13);
-			} else {
+			} else if (template[tpos] === 0x2a) {
 				// radix10
 				if (pool < 10)
 					break; // underflow
@@ -220,7 +231,12 @@ function generate(eos) {
 				// extract character
 				text.push(radix10[pool % 10]);
 				pool = Math.floor(pool / 10);
+			} else {
+				// take literally
+				text.push(template[tpos]);
 			}
+			// advance template
+			tpos += tinc;
 		}
 
 		// fill pool
@@ -229,14 +245,31 @@ function generate(eos) {
 
 	// append pool remainder
 	while (pool > 0) {
-		if (1) {
+		if (tpos < 0 || tpos >= template.length || template[tpos] === 0x2e) {
 			// extract radix13 character
 			text.push(radix13[pool % 13]);
 			pool = Math.floor(pool / 13);
-		} else {
+		} else if (template[tpos] === 0x2a) {
 			// extract radix10 character
 			text.push(radix10[pool % 10]);
 			pool = Math.floor(pool / 10);
+		} else {
+			// take literally
+			text.push(template[tpos]);
+		}
+	}
+
+	// add leading zeros
+	while (text.length < minLength) {
+		if (tpos < 0 || tpos >= template.length || template[tpos] === 0x2e) {
+			// extract radix13 character
+			text.push(radix13[0]);
+		} else if (template[tpos] === 0x2a) {
+			// extract radix10 character
+			text.push(radix10[0]);
+		} else {
+			// take literally
+			text.push(template[tpos]);
 		}
 	}
 
@@ -288,6 +321,9 @@ function validate(eos, text) {
 			pool *= 10;
 
 			ch -= 0x30;
+		} else {
+			// spacing
+			continue;
 		}
 
 		// inject value into pool
@@ -307,8 +343,8 @@ function validate(eos, text) {
 	}
 
 	// compare memory
-	let match = (mem.length === data.length);
-	for (let i = 0; i < mem.length; i++)
+	let match = (mem.length >= data.length);
+	for (let i = 0; i < data.length; i++)
 		if (data[i] !== mem[i])
 			match = 0;
 
@@ -334,17 +370,45 @@ function validate(eos, text) {
  * encode with valid end-of-sequence token
  */
 
-let strResult;
+let strResult = null;
 STAGE3EOS = null;
-for (let eos=0x0100; eos<0x0110; eos++) {
-	// generate output
-	let text = generate(eos);
 
-	// verify
-	if (validate(eos, text)) {
-		STAGE3EOS = eos;
-		strResult = String.fromCharCode.apply(null, text);
-		break; // found
+// get safe estimation of template end position
+let endPos = STAGE4OFFSET + generate(0x0100, STAGE4OFFSET, +1).length - 5;
+
+/*
+ * Generate output
+ * Because of the right-to-left nature of the encoded number, the template needs to be read from back to front.
+ * The issue is, that because of the mixed radix10/radix13 it is not sure how long the encoded text will be.
+ * Counting that length from the back might end at a different starting offset than requested.
+ *
+ * First, try to add a bit of offset jitter, things migh just fall into place.
+ * Second, add trailing padding and try again
+ *
+ *
+ */
+
+// scan the area
+for (let iScan=0; iScan<40; iScan++) {
+	for (let eos = 0x0100; eos < 0x00ff * 10; eos++) {
+		let text = generate(eos, endPos + iScan - 1, -1, endPos + iScan - STAGE4OFFSET);
+
+		// test if found
+		if (STAGE4OFFSET + text.length === endPos + iScan) {
+			if (validate(eos, text)) {
+				strResult = String.fromCharCode.apply(null, text);
+				STAGE3EOS = eos;
+
+				console.error("Found with: " + JSON.stringify({
+					eos: toHex(eos, 2),
+					text: strResult.replace(/\s/g, '_'),
+				}));
+
+				// break loops
+				iScan = 100;
+				break;
+			}
+		}
 	}
 }
 
@@ -368,7 +432,9 @@ try {
  * Update config if changed
  */
 
-console.error("STAGE3EOS=" + toHex(STAGE3EOS, 2));
+console.error("#Provides: " + JSON.stringify({
+	STAGE3EOS: toHex(STAGE3EOS, 2),
+}));
 
 if (config) {
 	if (
@@ -377,10 +443,6 @@ if (config) {
 		config.STAGE3EOS = toHex(STAGE3EOS, 2);
 
 		saveConfig(configFilename, config);
-
-		console.error("#Provides: " + JSON.stringify({
-			STAGE3EOS: toHex(STAGE3EOS, 2),
-		}));
 
 		console.error("#Updated configuration file \"" + configFilename + "\"");
 	}

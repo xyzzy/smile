@@ -178,7 +178,7 @@ let comFilename = args[1];
 let templateFilename = args[2];
 
 /*
- * Load input file
+ * Load input files
  */
 
 let data;
@@ -189,6 +189,13 @@ try {
 	process.exit(1);
 }
 
+let template;
+try {
+	template = new Uint8Array(fs.readFileSync(templateFilename));
+} catch (e) {
+	console.error("Failed to load input. " + e.toString());
+	process.exit(1);
+}
 
 /**
  * @typedef {Object} Node
@@ -215,10 +222,13 @@ function generate(seed, cache) {
 			 * what type is next character
 			 */
 			let radix;
-			if (0)
-				radix = radix10;
+			let tofs = STAGE3OFFSET + obj.text.length; // offset in template
+			if (tofs >= template.length || template[tofs] === 0x2e)
+				radix = radix13; // DOT
+			else if (template[tofs] === 0x2a)
+				radix = radix10; // STAR
 			else
-				radix = radix13;
+				radix = [template[tofs]]; // literal
 
 			/*
 			 * Simulate decoder main loop
@@ -451,15 +461,18 @@ for (let hi = 0; hi < radix13.length; hi++) {
 			// convert to string
 			let strResult = String.fromCharCode.apply(null, result);
 
+			// construct display text
+			let dispText = strResult.replace(/\s/g,'_');
+
 			if (!best || strResult.length < best.length) {
-				console.log(toHex(seed, 2), strResult, result.length, "[BEST]");
+				console.log(toHex(seed, 2), dispText, result.length, "[BEST]");
 				best = {
 					seed: seed,
 					strResult: strResult,
 				};
 
 			} else {
-				console.log(toHex(seed, 2), strResult, result.length);
+				console.log(toHex(seed, 2), dispText, result.length);
 			}
 		}
 	}
@@ -490,10 +503,11 @@ let SEEDHEAD = best.seed;
 let STAGE4BASE = STAGE3BASE + data.length;
 let STAGE4OFFSET = STAGE3OFFSET + best.strResult.length;
 
-console.error(
-	"SEEDHEAD=" + toHex(SEEDHEAD, 2) +
-	", STAGE4BASE=" + toHex(STAGE4BASE, 2) +
-	", STAGE4OFFSET=" + STAGE4OFFSET.toString());
+console.error("#Provides: " + JSON.stringify({
+	SEEDHEAD: toHex(SEEDHEAD, 2),
+	STAGE4BASE: toHex(STAGE4BASE, 2),
+	STAGE4OFFSET: STAGE4OFFSET,
+}));
 
 if (config) {
 	if (
@@ -503,15 +517,9 @@ if (config) {
 	) {
 		config.SEEDHEAD = toHex(SEEDHEAD, 2);
 		config.STAGE4BASE = toHex(STAGE4BASE, 2);
-		config.STAGE4OFFSET = STAGE4OFFSET.toString();
+		config.STAGE4OFFSET = STAGE4OFFSET;
 
 		saveConfig(configFilename, config);
-
-		console.error("#Provides: " + JSON.stringify({
-			SEEDHEAD: toHex(SEEDHEAD, 2),
-			STAGE4BASE: toHex(STAGE4BASE, 2),
-			STAGE4OFFSET: STAGE4OFFSET,
-		}));
 
 		console.error("#Updated configuration file \"" + configFilename + "\"");
 	}

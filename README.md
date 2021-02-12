@@ -547,6 +547,9 @@ The first two instructions can be optimised in different ways.
   - `Makefile.am`
     Contains descriptions of the build/construction process.
 
+  - `genTemplate.js`
+    Helper to convert monochrome png into template text.
+
   - `template.txt`
     Ascii art template.
 

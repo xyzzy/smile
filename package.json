@@ -11,6 +11,7 @@
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/xyzzy/smile",
   "dependencies": {
+    "canvas": "^2.6.1",
     "fs": "0.0.1-security",
     "minimist": "1.2.5"
   }

@@ -1,4 +1,8 @@
-	/**
+/*
+ * Conceptual listing of the four stages
+ */
+
+	/************************************************************************
 	 * STAGE-1
 	 *
 	 * Patches missing instructions into stage 2
@@ -35,7 +39,7 @@ stage1Start:
 	imul	$SEEDFIX3,(%bx),%si	// next number
  	xor	%si,OFSFIX3(%di)	// patch word
 
-	/**
+	/************************************************************************
 	 * STAGE-2
 	 *
 	 * Unpack stage-3
@@ -88,10 +92,10 @@ L2:
 	 */
 	jne	stage2Start			//* repeat until end-of-sequence
 
-	/**
+	/************************************************************************
 	 * STAGE-3
 	 *
-	 * Convert an extremely long mixed radix10/radix13 number into an radix256 number.
+	 * Convert an extremely long mixed radix10/radix13 number into a radix256 number.
 	 */
 stage3Start:
 	clr	%dx			// clear pool
@@ -134,7 +138,7 @@ GotEnum:
 	jmp	GetEnum			// loop
 
 
-	/**
+	/************************************************************************
 	 * STAGE-4
 	 *
 	 * Stipped down to essence demo
