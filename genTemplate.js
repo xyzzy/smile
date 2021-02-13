@@ -1,5 +1,6 @@
 /*
  *  This file is part of smile: ASCII-safe binaries
+ *
  *  Copyright (C) 2011, 2021, xyzzy@rockingship.org
  *
  *  This program is free software: you can redistribute it and/or modify

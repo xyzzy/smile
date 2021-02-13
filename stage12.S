@@ -1,5 +1,6 @@
 /*
  *  This file is part of smile: ASCII-safe binaries
+
  *  Copyright (C) 2011, 2021, xyzzy@rockingship.org
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -126,8 +127,8 @@ stage2Start:
 	 * Update hash at head of extracted data
 	 */
 
-	.byte	0x69,0x71,OFSHEAD,SEEDHEADL,SEEDHEADH	// 011a: 69 71 X X X	imul	$SEED,OFSHEAD(%bx,%di),%si	//* update hash
-   	.byte	0x31,0x71,OFSHEAD		// 011f: 31 71 X	xorw	%si,OFSHEAD(%bx,%di)		//* number generator
+	.byte	0x69,0x71,OFSHEAD,SEEDHEADL,SEEDHEADH	// 0118: 69 71 X X X	imul	$SEED,OFSHEAD(%bx,%di),%si	//* update hash
+   	.byte	0x31,0x71,OFSHEAD		// 011d: 31 71 X	xorw	%si,OFSHEAD(%bx,%di)		//* number generator
 
 	/*
 	 * step-2B: output byte
@@ -136,8 +137,8 @@ stage2Start:
 	 * Increment %bx to shift hash one byte leaving the desired output byte behind
 	 */
 
-	.byte	0x79,0x01^FIX1L			// 0122: 79 01		jns	L2				//* jump is sign bit clear
-	.byte	0x43^FIX1H			// 0124: 43		inc	%bx				//* shift output position
+	.byte	0x79,0x01^FIX1L			// 0120: 79 01		jns	L2				//* jump is sign bit clear
+	.byte	0x43^FIX1H			// 0122: 43		inc	%bx				//* shift output position
 
 	/*
 	 * step-2C: load next input byte
@@ -148,10 +149,10 @@ stage2Start:
 	 * Injection is a memory-memory operation, use %ah as intermediate byte. %ax is initially 0x0000.
 	 */
 L2:
-	.byte	0x6b,0x6d,OFSTEXT-1,SEEDTEXT	// 0125: 6b 6d X X	imul	$SEEDTEXT,OFSTEXT-1(%di),%bp	//* use input text as word to generate next number
-	.byte	0x47^FIX2L			// 0129: 47		inc	%di				//* shift input position
-	.byte	0x4b^FIX2H			// 012a: 4b		dec	%bx				//* increment distance input/output, decrement because %bx is used negatively
-	.byte	0x31,0x69,OFSHEAD		// 012b: 31 69 X	xorw	%bp,OFSHEAD(%bx,%di)		//* Inject entropy into HEAD
+	.byte	0x6b,0x6d,OFSTEXT-1,SEEDTEXT	// 0123: 6b 6d X X	imul	$SEEDTEXT,OFSTEXT-1(%di),%bp	//* use input text as word to generate next number
+	.byte	0x47^FIX2L			// 0127: 47		inc	%di				//* shift input position
+	.byte	0x4b^FIX2H			// 0128: 4b		dec	%bx				//* increment distance input/output, decrement because %bx is used negatively
+	.byte	0x31,0x69,OFSHEAD		// 0129: 31 69 X	xorw	%bp,OFSHEAD(%bx,%di)		//* Inject entropy into HEAD
 
 	/*
 	 * step-2D: loop until finished
@@ -159,11 +160,10 @@ L2:
 	 * Injecting where the result is zero can be used as trigger to indicate end-of-sequence.
 	 * This however should not happen for the low-byte because emitting a zero is a valid situation.
 	 */
-	.byte	0x75,0xea^FIX3L		// 012e: 75 ea		jne	stage2Start			//* repeat until end-of-sequence
+	.byte	0x75,0xea^FIX3L			// 012c: 75 ea		jne	stage2Start			//* repeat until end-of-sequence
 
 	// insert CRLF
-	.byte 0x35^FIX3H, 0x0d, 0x0a
-						// 12e:	35 0d 0a             	xor    $0xa0d,%ax
+	.byte 0x35^FIX3H, 0x0d, 0x0a		// 012e: 35 0d 0a	xor    $0xa0d,%ax
 
 stage3Start:
 	// Initial hash, and later first instruction of stage3

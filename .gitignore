@@ -16,7 +16,6 @@ m4/
 stamp-h1
 
 # generated files
-Makefile.config
 minimal.com
 minimal.lst
 stage1.inc

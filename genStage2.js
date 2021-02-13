@@ -1,5 +1,6 @@
 /*
  *  This file is part of smile: ASCII-safe binaries
+ *
  *  Copyright (C) 2011, 2021, xyzzy@rockingship.org
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -25,7 +26,7 @@
 let fs = require("fs");
 
 let STAGE3BASE = 0x0130;	// designed start of stage3. 0x0130-0x0139 is valid range.
-let HASHHEAD = 0x316b;		// word hash for output number generator.
+let HASHHEAD = 0x3030;		// word hash for output number generator.
 let SEEDTEXT = 0x6e;		// byte seed for input number generator.
 let STAGE3OFFSET = 0;		// Starting position in template
 let maxStep = 6;
@@ -433,10 +434,23 @@ function validate(seed, hash, text) {
  * In case of collision, then the shorter input length is preferred.
  */
 
+// reuse SEEDHEAD if available and not default value
+let OLDSEED = 0;
+if (config && config.SEEDHEAD && config.SEEDHEAD !== 0x3030) {
+	OLDSEED = config.SEEDHEAD;
+	console.error("#Reusing SEEDHEAD=" + toHex(OLDSEED));
+}
+
+if (!OLDSEED && !optFirst)
+	console.error("#Searching all alternatives takes about 30-40 minutes, supply --first to select the first found or preset SEEDHEAD in Makefile.config.");
+
 let best = null;
 for (let hi = 0; hi < radix13.length; hi++) {
 	for (let lo = 0; lo < radix13.length; lo++) {
 		let seed = radix13[hi] * 256 + radix13[lo];
+
+		if (OLDSEED && seed !== OLDSEED)
+			continue; // not selected for re-use
 
 		// test if one candidate is sufficient
 		if (best && optFirst)
@@ -464,15 +478,15 @@ for (let hi = 0; hi < radix13.length; hi++) {
 			// construct display text
 			let dispText = strResult.replace(/\s/g,'_');
 
-			if (!best || strResult.length < best.length) {
-				console.log(toHex(seed, 2), dispText, result.length, "[BEST]");
+			if (!best || strResult.length < best.strResult.length) {
+				console.log(toHex(seed, 2), dispText, strResult.length, "[BEST]");
 				best = {
 					seed: seed,
 					strResult: strResult,
 				};
 
 			} else {
-				console.log(toHex(seed, 2), dispText, result.length);
+				console.log(toHex(seed, 2), dispText, strResult.length);
 			}
 		}
 	}

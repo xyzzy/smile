@@ -1,5 +1,6 @@
 /*
  *  This file is part of smile: ASCII-safe binaries
+ *
  *  Copyright (C) 2011, 2021, xyzzy@rockingship.org
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -370,11 +371,6 @@ function validate(eos, text) {
  * encode with valid end-of-sequence token
  */
 
-let strResult = null;
-STAGE3EOS = null;
-
-// get safe estimation of template end position
-let endPos = STAGE4OFFSET + generate(0x0100, STAGE4OFFSET, +1).length - 5;
 
 /*
  * Generate output
@@ -388,9 +384,22 @@ let endPos = STAGE4OFFSET + generate(0x0100, STAGE4OFFSET, +1).length - 5;
  *
  */
 
+let OLDEOS = 0;
+if (config && config.STAGE3EOS && config.STAGE3EOS !== 0) {
+	OLDEOS = config.STAGE3EOS;
+	console.error("#Reusing STAGE3EOS=" + toHex(OLDEOS));
+}
+
+// get safe estimation of template end position
+let endPos = STAGE4OFFSET + generate(0x0100, STAGE4OFFSET, +1).length - 5;
+let strResult = null;
+
 // scan the area
-for (let iScan=0; iScan<40; iScan++) {
+for (let iScan = 0; iScan < 40; iScan++) {
 	for (let eos = 0x0100; eos < 0x00ff * 10; eos++) {
+		if (OLDEOS && eos !== OLDEOS)
+			continue; // not selected for re-use
+
 		let text = generate(eos, endPos + iScan - 1, -1, endPos + iScan - STAGE4OFFSET);
 
 		// test if found
@@ -399,10 +408,10 @@ for (let iScan=0; iScan<40; iScan++) {
 				strResult = String.fromCharCode.apply(null, text);
 				STAGE3EOS = eos;
 
-				console.error("Found with: " + JSON.stringify({
-					eos: toHex(eos, 2),
-					text: strResult.replace(/\s/g, '_'),
-				}));
+				// console.error("Found with: " + JSON.stringify({
+				// 	eos: toHex(eos, 2),
+				// 	text: strResult.replace(/\s/g, '_'),
+				// }));
 
 				// break loops
 				iScan = 100;

@@ -27,11 +27,11 @@ CLEANFILES = Makefile.config minimal.com minimal.lst stage1.inc stage12.com stag
 Makefile.config :
 	@echo "#Step-1"
 	echo 'STAGE1BASE=0x0100' > Makefile.config
-	echo 'STAGE3BASE=0x0130' >> Makefile.config
+	echo 'STAGE3BASE=0x0131' >> Makefile.config	# +1 because of extra instruction inlining a CRLF
 	echo 'INITSI=0x0100' >> Makefile.config
 	echo 'INITHASH=0x20cd' >> Makefile.config
 	echo 'SEEDTEXT=0x6e' >> Makefile.config		# User defined ascii-safe value that is even
-	echo 'SEEDHEAD=0x00' >> Makefile.config		# placeholder
+	echo 'SEEDHEAD=0x3030' >> Makefile.config	# placeholder
 	echo 'STAGE4BASE=0x0000' >> Makefile.config	# placeholder
 
 
@@ -69,8 +69,8 @@ stage3.com : stage3.S smile.lds stage1.inc
 #  Provides: SEEDHEAD, STAGE4BASE, STAGE4OFFSET
 
 stage3.asc : stage3.com template.txt genStage2.js Makefile.config
-	@echo "#Step-5, This can take 10 minutes"
-	node genStage2.js $@ stage3.com template.txt --config=Makefile.config --first
+	@echo "#Step-5"
+	node genStage2.js $@ stage3.com template.txt --config=Makefile.config
 
 
 # STEP 6:

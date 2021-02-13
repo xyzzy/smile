@@ -1,3 +1,6 @@
+[![smile.png](smile.png)](https://xyzzy.github.io/smile-media)  
+\[Click on image to start a DOSBox in your browser containing [smile.com](smile.com)\]
+
 # Welcome to the Wonderful World of ASCII binaries
 
 *The marvelous wonders of self modifying code*
@@ -226,7 +229,7 @@ In case of emergency, there is a second range having ascii-digit values
 
 Until the reference register has been loaded, offsets are unavailable reducing the available instructions:
 
-```assembler
+```assembly
 	// `ireg` is either %si or %di
 	// `reg` is either %si, %di or %bx
         
@@ -252,7 +255,7 @@ Using them only makes sense when the input values are defined.
 
 DOS initializes the following environment with fixed values:
 
-```
+```assembly
 	%si = 0x0100  
 	%di = 0xfffe  
 	%bx = 0x0000  
@@ -261,7 +264,7 @@ DOS initializes the following environment with fixed values:
 
 Applying these as constraints to the set of base instructions above, reduces it further to:
 
-```assembler
+```assembly
 	xor	%si,(%bx)
 	xor	(%bx),%si
 	imul	$IMM,(%bx),%si
@@ -276,14 +279,14 @@ Having `imul` and `xor` are perfect ingredients for a hash-function/number-gener
 The `imul` creates a new value based on a stored hash and given seed, and writes that to `%si`.  
 A second step for continuation used the `xor` to update the hash value.
 
-```assembler
+```assembly
 	imul    $SOMESEED,(%bx),%si	// next number in register
         xor	%si,(%bx)		// next number in memory
 ```
 
 The idea is to craft a sequence of specific seed/multipliers that create the necessary values to patch stage 2.
 
-```assembler
+```assembly
 	// generate number
 	imul	$SOMESEED,(%bx),%si
 	xor	%si,(%bx)
@@ -355,7 +358,7 @@ This approach allows an average of 2.6 radix13 characters to produce a single by
 data/code will be unpacked directly after stage2.
 When decoding has completed, the looping "jne" instruction will step directly into stage3 like it was normal program flow.
 
-```
+```assembly
 	/*
 	 * step-1: generate number
 	 *
@@ -421,14 +424,14 @@ Stage-2 mainloop is a streaming radix converter.
 Digits are considered radix10, lowercase is considered radix13.  
 Output is radix256.
 
-```
+```C
 	// load next character from text data and increment
 	WORD ax = *inPtr++;
 
 	// test for alpha or numeric
 	if (isDigit(ax))
 		dx *= 10;	// grow pool for radix10
-	else if (isAlpha(ax)
+	else if (isAlpha(ax))
 		dx *= 13;	// grow pool for radix13
 	else
 		continue;	// no, next character    
@@ -527,7 +530,7 @@ The encoder maps values to letters using this table:
 
 The decoder converts the letter to number using this code:
 
-```
+```assembly
 	sub	$'a',%al	// convert letter to ordinal number
 	sub	$2,%al		// shift top/bottom row to the right 1 position
 	shr	%al		// determine row/column
@@ -581,7 +584,11 @@ The first two instructions can be optimised in different ways.
     Conceptual listing of the stages together.
 
   - `Makefile.config`
-    Used for inter-program communication sharing generator details.
+    Used for inter-program communication sharing generator details.  
+    Included is the version specific to the bundles `smile.com`.
+
+  - `smile.com`
+    All the effort dedicated to this.
 
 ## Building
 
@@ -616,3 +623,5 @@ This project is licensed under GPLv3 - see the [LICENSE.txt](LICENSE.txt) file f
 ## Acknowledgments
 
 * The designers behind the x86 instruction-set for choosing the opcode values for the instructions. 
+* [DOSBox](https://www.dosbox.com) for making it possible to run `smile`.
+* [JS-DOS](https://js-dos.com) for making it possible to run DOSBox in a browser.

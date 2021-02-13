@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ```
+2021-02-13 01:05:49 Changed: Updated ascii-art and pre-release fixups.
 2021-02-12 16:21:52 Added: Ascii art.
 2021-02-11 17:51:58 Added: `genStage3.js` + `stage4.c`.
 2021-02-11 15:30:48 Added: Autotools support.
