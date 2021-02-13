@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+```
+2021-02-13 20:11:32 Changed: Data segment of stage4 is broken and removed.
+                        Pad `smile.com` manually until fixed.
+```
+
 ## Version 1.0.0 2021-02-13 19:11:16
 
 ```
