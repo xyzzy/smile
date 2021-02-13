@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ```
+2021-02-13 20:21:38 Added: `.gitattributes`.
+                        `*.com` are binary files and CRLF needs preserving.
 2021-02-13 20:11:32 Changed: Data segment of stage4 is broken and removed.
                         Pad `smile.com` manually until fixed.
 ```
