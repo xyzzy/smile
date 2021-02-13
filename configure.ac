@@ -10,5 +10,10 @@ AM_PROG_AS
 AC_PROG_CC
 AC_PROG_LN_S
 
+AC_CHECK_PROG(NODE,[node],[node],[no])
+if [ test x"$NODE" == x"no" ] ; then
+        AC_MSG_ERROR([Required program 'node' not found.])
+fi
+
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

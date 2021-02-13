@@ -1,7 +1,7 @@
 [![smile.png](smile.png)](https://xyzzy.github.io/smile-media)  
 \[Click on image to start a DOSBox in your browser containing [smile.com](smile.com)\]
 
-# Welcome to the Wonderful World of ASCII binaries
+# Welcome to the Wonderful World of ASCII executables
 
 *The marvelous wonders of self modifying code*
 
@@ -10,37 +10,68 @@
   - Viewed as text, it shows ascii art consisting of digits and the ascendless lowercase letter "acemnorsuvwxz".  
     The difference in contrast between the height of letters and digits should highlight the embedded artwork.
 
-  - Running as a MS-DOS/FreeDOS binary, it displays a kaleidoscope.
+  - Running as a MS-DOS/FreeDOS executable, it displays a kaleidoscope.
 
-Reducing the instruction set by removing all opcodes that are not alphanumerical, strips it basically down to only three instructions.  
-Those three instructions are by an astronomical improbability capable to jailbreak those restrictions.
+Reducing the instruction set by removing all opcodes that are not alphanumerical, strips it basically down to only four types instructions.  
+Two of those four are by an astronomical improbability capable to jailbreak those restrictions.
 
 The code and analysis might look straight forward but bear in mind that more than 800 tries and attempts were made to find the magic combination of instructions.
-
-When it was first created in 2011 it was much more impressive.  
-Running under XP, you simply change the extension and double-click it.
 
 `TL;DR` The juicy technical bit is about the mother of all instructions (stage1), and the radix13 encoding using ascii art (stage2).
 
 "Smile" is re-mastered from the original 2011 version.
 
+### Table of contents
+
+  - [Welcome to the Wonderful World of ASCII executables](#welcome-to-the-wonderful-world-of-ascii-executables)
+    - [Table of contents](#table-of-contents)        
+    - [Challenges/restrictions](#challengesrestrictions)
+    - [Bonuses](#bonuses)
+  - [Usage](#usage)
+    - [Instruction set analysis](#instruction-set-analysis)
+      - [Registers](#registers)
+      - [Instructions that write/modify `%si`](#instructions-that-writemodify-si)
+      - [Instructions that write/modify `%di`](#instructions-that-writemodify-di)
+      - [Instructions that write/modify `%bp`](#instructions-that-writemodify-bp)
+      - [Instructions that modify `%bx`](#instructions-that-modify-bx)
+      - [Instructions that can be used before an anchor register is loaded](#instructions-that-can-be-used-before-an-anchor-register-is-loaded)
+  - [Implementation](#implementation)
+    - [Stage 1](#stage-1)
+      - [Program start](#program-start)
+      - [Number generator](#number-generator)
+      - [Re-mastering bonus](#re-mastering-bonus)
+    - [Stage 2](#stage-2)
+    - [Stage 3](#stage-3)
+      - [Radix13 encoding](#radix13-encoding)
+  - [Manifest](#manifest)
+  - [Building](#building)
+  - [Versioning](#versioning)
+  - [License](#license)
+  - [Acknowledgments](#acknowledgments)
+  
 ### Challenges/restrictions
 
 *Mastery is revealed in limitation \[Goethe\]*
 
 Computer code consists of bytes where most of the common used values are not displayable as text.  
-For "smile" only 10+26 of those bytes are usable reducing the usability of a byte down to 15%.  
-The ASCII art that avoids an additional 13 letters reduces that further down to 9%.
+For "smile" only 10+26 of those byte characters are usable reducing their usability down to 15%.  
+The ASCII art avoids an additional 13 letters reduces that further down to 9%.
 
-From a coding perspective this enforces the restrictions:
+Removing instructions that are not alpha-numerical, strips functionality down to the fundamental/conceptual minimum:
 
-  - Half the registers are available and severely restricted in usage
-  - All common used constants and offsets are unavailable
-  - In all practicality, only the `xor` and `imul` instructions are available
-  - At program start, only the values `0x20cd`, `0x0100`, `0xfffe` are available
+  - 4.5 of the 7 registers available.
+  - 4 of the ~80 instructions available.
+  - constant values start from 48, (only range 0x30-0x39,0x61-0x79).
+  - contents of three registers: %bx (where memory starts), %si (where program starts), %di, which are safe to access.
+  - only the values `%bx=0x0000`, `%si=0x0100`, `%di=0xfffe`, `(%bx)=0x20cd`  are available.
 
-The chances that what is left can produce an executable is so astronomically small that the only explanation would be
- that the opcodes of the x86 instruction-set were deliberately constructed with ascii-safe binaries in mind.
+In all practicality, only the `XOR` and `IMUL` instructions are usable.  
+The destination of the `XOR` is updated whereas the destination of the `IMUL` is overwritten.  
+Reading undefined memory (other than location 0 or program code) is considered an error.
+
+The chances that what is left can produce an working executable that can jailbreak is so
+ astronomically small that the only explanation would be that the opcodes of the x86 instruction-set
+ were deliberately constructed with ascii-safe executables in mind.
 
 ### Bonuses
 
@@ -70,7 +101,7 @@ The file [instructions.txt](instructions.txt) contains an overview of all usable
 
 In essence only the registers `%si`, `%di`, `%bp`, `%bx`, `%ah` are available, and the instruction classes:
 
-```assembler
+```assembly
 	xor	reg,OFS(reg,reg)
 	xor	OFS(reg,reg),reg
 	cmp	reg,OFS(reg,reg)
@@ -418,7 +449,7 @@ To avoid this situation, the next input byte should be located in front of the h
 
 Stage2 needs to be able to access the heads of output and input which are located directly after stage2.
 
-#### Stage3
+#### Stage 3
 
 Stage-2 mainloop is a streaming radix converter.  
 Digits are considered radix10, lowercase is considered radix13.  
@@ -542,7 +573,7 @@ The decoder converts the letter to number using this code:
 
 The first two instructions can be optimised in different ways.
 
-## Files
+## Manifest
 
   - `instructions.txt`
     Available ascii-safe instructions.

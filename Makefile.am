@@ -10,7 +10,7 @@ ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = subdir-objects
 
 EXTRA_DIST = LICENSE.txt CHANGELOG.md README.md LISTING.txt instructions.txt .gitignore autogen.sh package.json package-lock.json \
-		template.txt smile.lds genStage1.js genStage2.js genStage3.js stage12.S stage3.S stage4.c
+		template.txt smile.lds genStage1.js genStage2.js genStage3.js stage12.S stage3.S stage4.c Makefile.config
 
 .PRECIOUS:   Makefile.config minimal.com minimal.lst stage1.inc stage12.com stage12.lst stage3.com stage3.lst stage3.asc stage4.com stage4.lst stage4.asc
 CLEANFILES = Makefile.config minimal.com minimal.lst stage1.inc stage12.com stage12.lst stage3.com stage3.lst stage3.asc stage4.com stage4.lst stage4.asc smile.com
@@ -21,10 +21,17 @@ CLEANFILES = Makefile.config minimal.com minimal.lst stage1.inc stage12.com stag
 #
 -include Makefile.config
 
+#
+# test for nodejs installed modules
+#
+
+node_modules/minimist/package.json :
+	npm install
+
 # STEP 1:
 #  Create an initial Makefile configuration if not present
 
-Makefile.config :
+Makefile.config : node_modules/minimist/package.json
 	@echo "#Step-1"
 	echo 'STAGE1BASE=0x0100' > Makefile.config
 	echo 'STAGE3BASE=0x0131' >> Makefile.config	# +1 because of extra instruction inlining a CRLF
@@ -88,7 +95,7 @@ stage12.com : stage12.S stage1.inc smile.lds stage1.inc
 
 stage4.com : stage4.c smile.lds Makefile.config
 	@echo "#Step-7"
-	gcc -o stage4.o $< -m32 -march=i386 -mtune=i386 -g0 -c -Os -fno-zero-initialized-in-bss -fomit-frame-pointer -fno-asynchronous-unwind-tables
+	gcc -o stage4.o $< -m32 -march=i386 -mtune=i386 -g0 -c -Os -fno-zero-initialized-in-bss -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-PIC
 	ld -o stage4.com stage4.o -T smile.lds -Ttext ${STAGE4BASE}
 	objdump -D stage4.com -b binary -m i386 -M addr16,data16 --adjust-vma=${STAGE4BASE} >stage4.lst
 
