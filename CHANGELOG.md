@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## Version 1.0.0 2021-02-13 19:11:16
+
 ```
 2021-02-13 17:52:35 Changed: Pre-release fixups.
 2021-02-13 01:05:49 Changed: Updated ascii-art and pre-release fixups.
@@ -19,4 +21,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 2021-02-03 23:19:59 Historic commit.
 ```
 
-[Unreleased]: https://github.com/xyzzy/smile/compare/v0.0.0...HEAD
+[Unreleased]: https://github.com/xyzzy/smile/compare/v1.0.0...HEAD
