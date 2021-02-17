@@ -1,7 +1,9 @@
-[![smile.png](smile.png)](https://xyzzy.github.io/smile-media)  
-\[Click on image to start a DOSBox in your browser containing [smile.com](smile.com)\]
+\[Click on image to start a DOSBox in your browser containing [smile.com](smile.com)\]  
+[![smile.png](smile.png)](https://xyzzy.github.io/smile-media)
 
-# Welcome to the Wonderful World of ASCII executables
+# Smile
+
+## Welcome to the Wonderful World of ASCII executables
 
 *The marvelous wonders of self modifying code*
 
@@ -24,9 +26,8 @@ The code and analysis might look straight forward but bear in mind that more tha
 ### Table of contents
 
   - [Welcome to the Wonderful World of ASCII executables](#welcome-to-the-wonderful-world-of-ascii-executables)
-    - [Table of contents](#table-of-contents)        
-    - [Challenges/restrictions](#challengesrestrictions)
-    - [Bonuses](#bonuses)
+  - [Table of contents](#table-of-contents)
+  - [Challenges/restrictions and bonuses](#challengesrestrictions-and-bonuses)
   - [Usage](#usage)
     - [Instruction set analysis](#instruction-set-analysis)
       - [Registers](#registers)
@@ -49,7 +50,7 @@ The code and analysis might look straight forward but bear in mind that more tha
   - [License](#license)
   - [Acknowledgments](#acknowledgments)
   
-### Challenges/restrictions
+## Challenges/restrictions and bonuses
 
 *Mastery is revealed in limitation \[Goethe\]*
 
@@ -72,8 +73,6 @@ Reading undefined memory (other than location 0 or program code) is considered a
 The chances that what is left can produce an working executable that can jailbreak is so
  astronomically small that the only explanation would be that the opcodes of the x86 instruction-set
  were deliberately constructed with ascii-safe executables in mind.
-
-### Bonuses
 
 "Smile" does take advantage of a DOS environment:
 
@@ -575,50 +574,50 @@ The first two instructions can be optimised in different ways.
 
 ## Manifest
 
-  - `instructions.txt`
+  - [instructions.txt](instructions.txt)  
     Available ascii-safe instructions.
 
-  - `Makefile.am`
+  - [Makefile.am](Makefile.am)  
     Contains descriptions of the build/construction process.
 
-  - `genTemplate.js`
+  - [genTemplate.js](genTemplate.js)  
     Helper to convert monochrome png into template text.
 
-  - `template.txt`
+  - [template.txt](template.txt)  
     Ascii art template.
 
-  - `stage12.S`
+  - [stage12.S](stage12.S)  
     Stage1 (patcher) and stage2 (pre-loader) sources.
 
-  - `genStage1.js`
-    Generate fixups for stage1.
-
-  - `stage3.S`
+  - [stage3.S](stage3.S)  
     Stage3 (loader) source.
 
-  - `genStage3.js`
-    Encode stage3 (loader) as mixed radix10/radix13 text.
-
-  - `stage4.c`
+  - [stage4.c](stage4.c)  
     Stage4 (demo) source.
 
-  - `genStage4.js`
+  - [genStage1.js](genStage1.js)  
+    Generate fixups for stage1.
+
+  - [genStage2.js](genStage2.js)  
+    Encode stage3 (loader) as mixed radix10/radix13 text.
+
+  - [genStage3.js](genStage3.js)  
     Encode stage4 (demo) as mixed radix10/radix13 text.
 
-  - `token.S`
+  - `token.S`  
     Token based compression decoder.
 
-  - `genToken.js`
+  - `genToken.js`  
     Token based compression encoder emitting radix10/radix13 text.
 
-  - `LISTING.txt`
+  - [LISTING.txt](LISTING.txt)  
     Conceptual listing of the stages together.
 
-  - `Makefile.config`
+  - `Makefile.config`  
     Used for inter-program communication sharing generator details.  
     Included is the version specific to the bundles `smile.com`.
 
-  - `smile.com`
+  - [smile.com](smile.com)  
     All the effort dedicated to this.
 
 ## Building
