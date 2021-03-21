@@ -8,6 +8,9 @@ navbar_entries:
   - title: "smile@github"
     url: https://github.com/xyzzy/smile
 
+  - title: "README@smile-media"
+    url: https://xyzzy.github.io/smile-media/README
+
 footer_entries:
   - title: "showcase"
     url: https://xyzzy.github.io
@@ -17,3 +20,6 @@ footer_entries:
 
   - title: "smile@github"
     url: https://github.com/xyzzy/smile
+
+  - title: "README@smile-media"
+    url: https://xyzzy.github.io/smile-media/README
