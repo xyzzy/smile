@@ -9,8 +9,17 @@
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = subdir-objects
 
-EXTRA_DIST = LICENSE.txt CHANGELOG.md README.md LISTING.txt instructions.txt .gitignore autogen.sh package.json package-lock.json \
-		template.txt smile.lds genStage1.js genStage2.js genStage3.js stage12.S stage3.S stage4.c Makefile.config
+EXTRA_DIST = \
+	.gitattributes .gitignore \
+	_config.yml _data/home.yml \
+	assets/favicon-32.png assets/favicon-152.png assets/favicon-192.png \
+	assets/smile-124x124.png assets/smile-270x270.png assets/smile-576x486.png \
+	assets/favimage-472x472.jpg assets/favimage-944x472.jpg \
+	CHANGELOG.md LICENSE.txt README.md index.md \
+	LISTING.txt instructions.txt \
+        autogen.sh package-lock.json \
+	smile.lds genStage1.js genStage2.js genStage3.js genTemplate.js stage12.S stage3.S stage4.c Makefile.config \
+	awesome-47x21.png template.png template.txt smile.com
 
 .PRECIOUS:   Makefile.config minimal.com minimal.lst stage1.inc stage12.com stage12.lst stage3.com stage3.lst stage3.asc stage4.com stage4.lst stage4.asc
 CLEANFILES = Makefile.config minimal.com minimal.lst stage1.inc stage12.com stage12.lst stage3.com stage3.lst stage3.asc stage4.com stage4.lst stage4.asc smile.com

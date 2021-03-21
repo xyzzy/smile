@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## 2021-03-21 01:07:26 [Version 1.1.0]
+
 ```
 2021-03-19 23:23:06 Added: `moonwalk` theme.
 2021-02-17 20:17:08 Changed: Table of contents and Manifest in `README.md`.
@@ -29,4 +31,5 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 2021-02-03 23:19:59 Historic commit.
 ```
 
-[Unreleased]: https://github.com/xyzzy/smile/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/xyzzy/smile/compare/v1.1.0...HEAD
+[Version 1.1.0]: https://github.com/xyzzy/smile/compare/v1.0.0...v1.1.0
