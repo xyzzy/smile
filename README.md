@@ -1,9 +1,17 @@
+---
+layout: home
+title: "smile - When ASCII art is the executable"
+image: assets/favimage-472x472.jpg
+---
+
 \[Click on image to start a DOSBox in your browser containing [smile.com](smile.com)\]  
-[![smile.png](smile.png)](https://xyzzy.github.io/smile-media)
+[![teaser](assets/smile-576x486.png)](https://xyzzy.github.io/smile-media/)
 
 # Smile
 
-## Welcome to the Wonderful World of ASCII executables
+When ASCII art is the executable
+
+### Welcome to the Wonderful World of ASCII executables
 
 *The marvelous wonders of self modifying code*
 
@@ -23,7 +31,7 @@ The code and analysis might look straight forward but bear in mind that more tha
 
 "Smile" is re-mastered from the original 2011 version.
 
-### Table of contents
+## Table of contents
 
   - [Welcome to the Wonderful World of ASCII executables](#welcome-to-the-wonderful-world-of-ascii-executables)
   - [Table of contents](#table-of-contents)

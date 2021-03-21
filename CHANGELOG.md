@@ -1,4 +1,5 @@
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
@@ -7,14 +8,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ```
+2021-03-19 23:23:06 Added: `moonwalk` theme.
 2021-02-17 20:17:08 Changed: Table of contents and Manifest in `README.md`.
 2021-02-13 20:21:38 Added: `.gitattributes`. 
-                        `*.com` are binary files and CRLF needs preserving.
 2021-02-13 20:11:32 Changed: Data segment of stage4 is broken and removed.
-                        Pad `smile.com` manually until fixed.
 ```
 
-## Version 1.0.0 2021-02-13 19:11:16
+## 2021-02-13 19:11:16 Version 1.0.0
 
 ```
 2021-02-13 17:52:35 Changed: Pre-release fixups.
