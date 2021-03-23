@@ -14,6 +14,7 @@ theme_config:
   appearance: "dark" # can be "light", "dark" or "auto"
   back_home_text: "&#x2343; home" # customize text for homepage link in post layout
   date_format: "%Y-%m-%d" # customize how date is formatted
+  date_format_post: "%d %B %Y" # customize how date is formatted for blog post headers
   show_title: false # show title in home page
   show_description: false # show blog description in home page
   show_navbar: true # show horizontal navbar in home page

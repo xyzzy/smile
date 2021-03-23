@@ -2,24 +2,12 @@ navbar_entries:
   - title: "showcase"
     url: https://xyzzy.github.io
 
-  - title: "xyzzy@github"
-    url: https://github.com/xyzzy
-
   - title: "smile@github"
     url: https://github.com/xyzzy/smile
-
-  - title: "README@smile-media"
-    url: https://xyzzy.github.io/smile-media/README
 
 footer_entries:
   - title: "showcase"
     url: https://xyzzy.github.io
 
-  - title: "xyzzy@github"
-    url: https://github.com/xyzzy
-
   - title: "smile@github"
     url: https://github.com/xyzzy/smile
-
-  - title: "README@smile-media"
-    url: https://xyzzy.github.io/smile-media/README
