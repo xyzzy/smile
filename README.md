@@ -11,6 +11,9 @@ image: assets/favimage-472x472.jpg
 
 When ASCII art is the executable
 
+Instead of an ad with tracking...  
+Like to [donate ![opencollective](assets/opencollective-icon.svg)](https://opencollective.com/xyzzy1) some appreciation for the use or inspiration this gives you?
+
 ### Welcome to the Wonderful World of ASCII executables
 
 *The marvelous wonders of self modifying code*

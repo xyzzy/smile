@@ -2,12 +2,12 @@ navbar_entries:
   - title: "showcase"
     url: https://xyzzy.github.io
 
-  - title: "smile@github"
+  - title: "smile <div class=\"GitHub-mark\"></div>"
     url: https://github.com/xyzzy/smile
 
 footer_entries:
   - title: "showcase"
     url: https://xyzzy.github.io
 
-  - title: "smile@github"
+  - title: "smile <div class=\"GitHub-mark\"></div>"
     url: https://github.com/xyzzy/smile
