@@ -57,6 +57,7 @@ The code and analysis might look straight forward but bear in mind that more tha
       - [Radix13 encoding](#radix13-encoding)
   - [Manifest](#manifest)
   - [Building](#building)
+  - [Source code](#source-code)
   - [Versioning](#versioning)
   - [License](#license)
   - [Acknowledgments](#acknowledgments)
@@ -652,6 +653,14 @@ The project consists of multiple stage generators/encoders and loaders/decoders.
 The generators encoded the next stage into text, including decoding instructions (as macros) for the loaders.  
 Generators may change `Makefile.config` when replacing macro placeholders with actual values.  
 Changes should trigger makefile reloading which restart construction.
+
+## Source code
+
+Grab one of the tarballs at [https://github.com/xyzzy/smile/releases](https://github.com/xyzzy/smile/releases) or checkout the latest code:
+
+```sh
+  git clone https://github.com/xyzzy/smile.git
+```
 
 ## Versioning
 
