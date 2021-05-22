@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## 2021-05-22 02:10:45 [Version 1.2.0]
+
 ```
 2021-05-22 02:01:50 Added: `canvas.html`, and changed `stage4.c` to MIT license.
 2021-04-07 20:50:24 Added: Fixed: Location source code.
@@ -39,5 +41,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 2021-02-03 23:19:59 Historic commit.
 ```
 
-[Unreleased]: https://github.com/xyzzy/smile/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/xyzzy/smile/compare/v1.2.0...HEAD
+[Version 1.2.0]: https://github.com/xyzzy/smile/compare/v1.1.0...v1.2.0
 [Version 1.1.0]: https://github.com/xyzzy/smile/compare/v1.0.0...v1.1.0
