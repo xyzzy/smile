@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+```
+2021-05-22 02:16:53 Fixed: Interval timer in `canvas.html`.
+```
+
 ## 2021-05-22 02:10:45 [Version 1.2.0]
 
 ```
