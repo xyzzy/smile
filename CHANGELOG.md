@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ```
+2021-05-22 02:01:50 Added: `canvas.html`, and changed `stage4.c` to MIT license.
 2021-04-07 20:50:24 Added: Fixed: Location source code.
 2021-03-26 18:15:35 Added: Donate button.
 2021-03-23 17:38:21 Changed: Order items in navbar.

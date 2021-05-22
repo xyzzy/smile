@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<!--
+ *  This file is part of smile: ASCII-safe binaries
+ *
+ *  The MIT License (MIT)
+ *
+ *  Copyright (C) 2011, 2021, xyzzy@rockingship.org
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in
+ *  all copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ *  THE SOFTWARE.
+-->
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Smile</title>
+    <style>
+        body {
+            position: absolute;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+        }
+        canvas {
+            position: absolute;
+            margin: auto;
+            padding: 0;
+            width: 640px;
+            height: 400px;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+        }
+    </style>
+</head>
+
+<body>
+<canvas id="canvas"></canvas>
+
+<script>
+	window.addEventListener('load', function () {
+		const palette =
+			[
+				// taken from https://github.com/otya128/winevdm/blob/master/krnl386/vga.c
+
+				// 16 colors in IRGB values
+				0xff000000, 0xff0000AA, 0xff00AA00, 0xff00AAAA, 0xffAA0000, 0xffAA00AA, 0xffAA5500, 0xffAAAAAA, 0xff555555, 0xff5555FF, 0xff55FF55, 0xff55FFFF, 0xffFF5555, 0xffFF55FF, 0xffFFFF55, 0xffFFFFFF,
+				// 16 shades of gray
+				0xff000000, 0xff101010, 0xff202020, 0xff353535, 0xff454545, 0xff555555, 0xff656565, 0xff757575, 0xff8A8A8A, 0xff9A9A9A, 0xffAAAAAA, 0xffBABABA, 0xffCACACA, 0xffDFDFDF, 0xffEFEFEF, 0xffFFFFFF,
+				// High Intensity group - 72 colors in 1/3 saturation groups (20H-37H high)
+				0xff0000FF, 0xff4100FF, 0xff8200FF, 0xffBE00FF, 0xffFF00FF, 0xffFF00BE, 0xffFF0082, 0xffFF0041, 0xffFF0000, 0xffFF4100, 0xffFF8200, 0xffFFBE00, 0xffFFFF00, 0xffBEFF00, 0xff82FF00, 0xff41FF00, 0xff00FF00, 0xff00FF41, 0xff00FF82, 0xff00FFBE, 0xff00FFFF, 0xff00BEFF, 0xff0082FF, 0xff0041FF,
+				// High Intensity group - 72 colors in 2/3 saturation groups (38H-4FH moderate)
+				0xff8282FF, 0xff9E82FF, 0xffBE82FF, 0xffDF82FF, 0xffFF82FF, 0xffFF82DF, 0xffFF82BE, 0xffFF829E, 0xffFF8282, 0xffFF9E82, 0xffFFBE82, 0xffFFDF82, 0xffFFFF82, 0xffDFFF82, 0xffBEFF82, 0xff9EFF82, 0xff82FF82, 0xff82FF9E, 0xff82FFBE, 0xff82FFDF, 0xff82FFFF, 0xff82DFFF, 0xff82BEFF, 0xff829EFF,
+				// High Intensity group - 72 colors in 3/3 saturation groups (50H-67H low)
+				0xffBABAFF, 0xffCABAFF, 0xffDFBAFF, 0xffEFBAFF, 0xffFFBAFF, 0xffFFBAEF, 0xffFFBADF, 0xffFFBACA, 0xffFFBABA, 0xffFFCABA, 0xffFFDFBA, 0xffFFEFBA, 0xffFFFFBA, 0xffEFFFBA, 0xffDFFFBA, 0xffCAFFBA, 0xffBAFFBA, 0xffBAFFCA, 0xffBAFFDF, 0xffBAFFEF, 0xffBAFFFF, 0xffBAEFFF, 0xffBADFFF, 0xffBACAFF,
+				// Medium Intensity group - 72 colors in 1/3 saturation groups (68H-7FH high)
+				0xff000071, 0xff1C0071, 0xff390071, 0xff550071, 0xff710071, 0xff710055, 0xff710039, 0xff71001C, 0xff710000, 0xff711C00, 0xff713900, 0xff715500, 0xff717100, 0xff557100, 0xff397100, 0xff1C7100, 0xff007100, 0xff00711C, 0xff007139, 0xff007155, 0xff007171, 0xff005571, 0xff003971, 0xff001C71,
+				// Medium Intensity group - 72 colors in 2/3 saturation groups (80H-97H moderate)
+				0xff393971, 0xff453971, 0xff553971, 0xff613971, 0xff713971, 0xff713961, 0xff713955, 0xff713945, 0xff713939, 0xff714539, 0xff715539, 0xff716139, 0xff717139, 0xff617139, 0xff557139, 0xff457139, 0xff397139, 0xff397145, 0xff397155, 0xff397161, 0xff397171, 0xff396171, 0xff395571, 0xff394571,
+				// Medium Intensity group - 72 colors in 3/3 saturation groups (98H-AFH low)
+				0xff515171, 0xff595171, 0xff615171, 0xff695171, 0xff715171, 0xff715169, 0xff715161, 0xff715159, 0xff715151, 0xff715951, 0xff716151, 0xff716951, 0xff717151, 0xff697151, 0xff617151, 0xff597151, 0xff517151, 0xff517159, 0xff517161, 0xff517169, 0xff517171, 0xff516971, 0xff516171, 0xff515971,
+				// Low Intensity group - 72 colors in 1/3 saturation groups (B0H-C7H high)
+				0xff000041, 0xff100041, 0xff200041, 0xff310041, 0xff410041, 0xff410031, 0xff410020, 0xff410010, 0xff410000, 0xff411000, 0xff412000, 0xff413100, 0xff414100, 0xff314100, 0xff204100, 0xff104100, 0xff004100, 0xff004110, 0xff004120, 0xff004131, 0xff004141, 0xff003141, 0xff002041, 0xff001041,
+				// Low Intensity group - 72 colors in 2/3 saturation groups (C8H-DFH moderate)
+				0xff202041, 0xff282041, 0xff312041, 0xff392041, 0xff412041, 0xff412039, 0xff412031, 0xff412028, 0xff412020, 0xff412820, 0xff413120, 0xff413920, 0xff414120, 0xff394120, 0xff314120, 0xff284120, 0xff204120, 0xff204128, 0xff204131, 0xff204139, 0xff204141, 0xff203941, 0xff203141, 0xff202841,
+				// Low Intensity group - 72 colors in 3/3 saturation groups (E0H-F7H low)
+				0xff2D2D41, 0xff312D41, 0xff352D41, 0xff3D2D41, 0xff412D41, 0xff412D3D, 0xff412D35, 0xff412D31, 0xff412D2D, 0xff41312D, 0xff41352D, 0xff413D2D, 0xff41412D, 0xff3D412D, 0xff35412D, 0xff31412D, 0xff2D412D, 0xff2D4131, 0xff2D4135, 0xff2D413D, 0xff2D4141, 0xff2D3D41, 0xff2D3541, 0xff2D3141,
+				// Fill up remainder of palettes with black
+				0xff000000, 0xff000000, 0xff000000, 0xff000000, 0xff000000, 0xff000000, 0xff000000, 0xff000000,
+			];
+
+		// get access to RGBA array of canvas
+		let width = 320;
+		let height = 200;
+		let canvas = document.getElementById("canvas");
+		canvas.width = width;
+		canvas.height = height;
+		let ctx = canvas.getContext("2d");
+		let imgData = ctx.getImageData(0, 0, width, height);
+
+		// access imgData through 32bit wrapper
+		let rgba = new Uint32Array(imgData.data.buffer);
+
+		let intervalCounter = 0;
+		let diamonds = 0;
+		let pattern1 = 0x05;
+		let pattern2 = 0x01;
+		let numStates = 0xff;
+		let precise = 0x40;
+		let liveOrDie = 1;
+		let esByte = new Uint8Array(65536);
+		let fsByte = new Uint8Array(65536);
+
+		// set center spot
+		fsByte[(height + 2) / 2 * (width + 2) + (width + 2) / 2]++;
+
+		// the bios timer (40:006c) has 55mSec interval
+		setInterval(() => {
+			intervalCounter++;
+
+			let si = (width + 2) * (height + 1) - 1;
+			let bx = width * height;
+
+			do {
+
+				let cx = width;
+				do {
+					si--;
+					bx--;
+					cx--;
+
+					if (si < 0) alert(0);
+
+					// get new pixel value
+					let px = fsByte[si];
+
+					if (px) {
+						px++;
+					} else {
+						let dx = 0;
+
+						if (!diamonds) {
+							dx += fsByte[(si - width - 2 - 1) & 0xffff] +
+								fsByte[(si - width - 2 + 1) & 0xffff] +
+								fsByte[(si + width + 2 - 1) & 0xffff] +
+								fsByte[(si + width + 2 + 1) & 0xffff];
+						}
+						dx += fsByte[(si - width - 2) & 0xffff] +
+							fsByte[(si - 1) & 0xffff] +
+							fsByte[(si + 1) & 0xffff] +
+							fsByte[(si + width + 2) & 0xffff];
+
+						px = 0;
+						if (dx > precise || dx === pattern1 || dx === pattern2)
+							px = 1;
+					}
+
+					if (px === numStates) {
+						px = liveOrDie;
+
+						if (((height + 2) / 2 * (width + 2) + (width + 2) / 2) < 0) alert(((height + 2) / 2 * (width + 2) + (width + 2) / 2));
+						if (((height + 2) / 2 * (width + 2) + (width + 2) / 2) >= 64000) alert(((height + 2) / 2 * (width + 2) + (width + 2) / 2));
+
+						fsByte[(height + 2) / 2 * (width + 2) + (width + 2) / 2]++;
+					}
+
+					// write pixel to SCREEN
+					esByte[si] = px;
+					rgba[bx] = palette[px & 0xff];
+				} while (cx !== 0);
+
+				si -= 2;
+
+			} while (bx !== 0);
+
+			// swap ef/fs
+			let tmp = esByte;
+			esByte = fsByte;
+			fsByte = tmp;
+
+			// write RGBA buffer to screen
+			ctx.putImageData(imgData, 0, 0);
+		}, 55 * 2);
+
+	});
+</script>
+</body>
+</html>
+

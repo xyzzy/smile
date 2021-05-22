@@ -632,6 +632,9 @@ The first two instructions can be optimised in different ways.
   - [smile.com](smile.com)  
     All the effort dedicated to this.
 
+  - [canvas.html](canvas.html)  
+    HTML canvas/javascript implementation of the kaleidoscope content.
+
 ## Building
 
 No need for autotools when building, `Makefile.am` is a regular makefile.  
@@ -670,8 +673,11 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 This project is licensed under GPLv3 - see the [LICENSE.txt](LICENSE.txt) file for details.
 
+The code for the kaleidoscope content, [stage4.c](stage4.c) and [canvas.html](canvas.html) are MIT licenced.
+
 ## Acknowledgments
 
 * The designers behind the x86 instruction-set for choosing the opcode values for the instructions. 
 * [DOSBox](https://www.dosbox.com) for making it possible to run `smile`.
 * [JS-DOS](https://js-dos.com) for making it possible to run DOSBox in a browser.
+* [https://github.com/otya128/winevdm](https://github.com/otya128/winevdm) for the VGA-256 colour palette.
