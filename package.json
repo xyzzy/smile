@@ -13,6 +13,6 @@
   "dependencies": {
     "canvas": "^2.6.1",
     "fs": "0.0.1-security",
-    "minimist": "1.2.5"
+    "minimist": "1.2.6"
   }
 }
